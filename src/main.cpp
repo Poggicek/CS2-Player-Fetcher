@@ -50,17 +50,34 @@ void CustomSteamAPIInit()
 	g_hSteamUser = g_pSteamClient->ConnectToGlobalUser(g_hSteamPipe);
 	g_pSteamFriends = g_pSteamClient->GetISteamFriends(g_hSteamUser, g_hSteamPipe, "SteamFriends017");
 	g_pSteamUser = g_pSteamClient->GetISteamUser(g_hSteamUser, g_hSteamPipe, "SteamUser019");
+	g_bSteamAPIInitialized = true;
 }
 
 void CustomSteamAPIShutdown()
 {
+	if(!g_bSteamAPIInitialized)
+		return;
+
 	g_pSteamClient->ReleaseUser(g_hSteamPipe, g_hSteamUser);
 	g_pSteamClient->BReleaseSteamPipe(g_hSteamPipe);
+	g_bSteamAPIInitialized = false;
 }
+
+BOOL WINAPI consoleHandler(DWORD signal)
+{
+	if (signal == CTRL_CLOSE_EVENT || signal == CTRL_C_EVENT || signal == CTRL_BREAK_EVENT)
+	{
+		CustomSteamAPIShutdown();
+		return true;
+	}
+	return false;
+}
+
 
 int main()
 {
 	SetConsoleOutputCP(65001);
+	SetConsoleCtrlHandler(consoleHandler, true);
 	CustomSteamAPIInit();
 
 	auto nPlayers = g_pSteamFriends->GetCoplayFriendCount();

@@ -17,3 +17,5 @@ ISteamFriends* g_pSteamFriends;
 ISteamUser* g_pSteamUser;
 HSteamPipe g_hSteamPipe;
 HSteamUser g_hSteamUser;
+
+bool g_bSteamAPIInitialized = false;
