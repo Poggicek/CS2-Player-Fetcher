@@ -1,0 +1,5 @@
+/bin
+/build
+*.sln
+/vendor/steam
+.vs
