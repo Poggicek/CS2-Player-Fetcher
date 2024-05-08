@@ -79,6 +79,12 @@ int main()
 		if (app != 730)
 			continue;
 
+		auto now = std::chrono::system_clock::now();
+		auto time = std::chrono::system_clock::from_time_t(iTimeStamp);
+
+		if (std::chrono::duration_cast<std::chrono::minutes>(now - time).count() > 30)
+			continue;
+
 		players.emplace_back(playerSteamID, iTimeStamp);
 	}
 
