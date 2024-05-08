@@ -80,11 +80,12 @@ int main()
 	SetConsoleCtrlHandler(consoleHandler, true);
 	CustomSteamAPIInit();
 
-	auto nPlayers = g_pSteamFriends->GetCoplayFriendCount();
+	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
 
 	std::vector<Player> players;
+	int iHighestTimeStamp = 0;
 
-	for (int i = 0; i < nPlayers; ++i)
+	for (int i = 0; i < iPlayers; ++i)
 	{
 		CSteamID playerSteamID = g_pSteamFriends->GetCoplayFriend(i);
 		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
@@ -96,16 +97,20 @@ int main()
 		if (app != 730)
 			continue;
 
-		static auto now = std::chrono::system_clock::now();
-		auto time = std::chrono::system_clock::from_time_t(iTimeStamp);
-
-		if (std::chrono::duration_cast<std::chrono::minutes>(now - time).count() > 30)
-			continue;
+		if (iTimeStamp > iHighestTimeStamp)
+			iHighestTimeStamp = iTimeStamp;
 
 		players.emplace_back(playerSteamID, iTimeStamp);
 	}
 
 	std::sort(players.begin(), players.end(), [](const Player& a, const Player& b) { return a.time > b.time; });
+
+	std::erase_if(players, [iHighestTimeStamp](const Player& player) {
+		static auto highestTime = std::chrono::system_clock::from_time_t(iHighestTimeStamp);
+		auto time = std::chrono::system_clock::from_time_t(player.time);
+
+		return std::chrono::duration_cast<std::chrono::minutes>(highestTime - time).count() > 2;
+	});
 
 	for (int i = 0; i < min(9, (int)players.size()); ++i)
 	{
