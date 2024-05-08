@@ -49,6 +49,7 @@ void CustomSteamAPIInit()
 	g_hSteamPipe = g_pSteamClient->CreateSteamPipe();
 	g_hSteamUser = g_pSteamClient->ConnectToGlobalUser(g_hSteamPipe);
 	g_pSteamFriends = g_pSteamClient->GetISteamFriends(g_hSteamUser, g_hSteamPipe, "SteamFriends017");
+	g_pSteamUser = g_pSteamClient->GetISteamUser(g_hSteamUser, g_hSteamPipe, "SteamUser019");
 }
 
 void CustomSteamAPIShutdown()
@@ -72,6 +73,9 @@ int main()
 		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
 		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
 
+		if (playerSteamID == g_pSteamUser->GetSteamID())
+			continue;
+
 		if (app != 730)
 			continue;
 
@@ -80,16 +84,31 @@ int main()
 
 	std::sort(players.begin(), players.end(), [](const Player& a, const Player& b) { return a.time > b.time; });
 
-	for (int i = 0; i < min(10, (int)players.size()); ++i)
+	for (int i = 0; i < min(9, (int)players.size()); ++i)
 	{
 		auto& player = players[i];
 		const char* playerName = g_pSteamFriends->GetFriendPersonaName(player.playerSteamID);
-		printf("%s - https://leetify.com/app/profile/%lld\n", playerName, player.playerSteamID.ConvertToUint64());
+
+		printf("https://leetify.com/app/profile/%lld | %s\n", player.playerSteamID.ConvertToUint64(), playerName);
+	}
+
+	printf("Open links in browser (Y/n) ");
+
+	int input = getchar();
+	if (input == 'n' || input == 'N')
+	{
+		CustomSteamAPIShutdown();
+		return 0;
+	}
+
+	for (int i = 0; i < min(9, (int)players.size()); ++i)
+	{
+		auto& player = players[i];
+		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
+		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 	}
 
 	CustomSteamAPIShutdown();
-
-	system("pause");
 
 	return 0;
 }
