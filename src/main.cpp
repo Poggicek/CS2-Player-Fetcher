@@ -1,10 +1,16 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <algorithm>
-#include <windows.h>
 #include <filesystem>
+#include <mutex>
+#include <thread>
+#include <windows.h>
+#include <tabulate/table.hpp>
 
 #include "main.h"
+#include "leetify_provider.h"
+
+using namespace tabulate;
 
 std::string GetSteamClientDllPath()
 {
@@ -73,6 +79,12 @@ BOOL WINAPI consoleHandler(DWORD signal)
 	return false;
 }
 
+std::string roundTo(float value, int decimalPlaces)
+{
+	std::stringstream stream;
+	stream << std::fixed << std::setprecision(decimalPlaces) << value;
+	return stream.str();
+}
 
 int main()
 {
@@ -112,13 +124,49 @@ int main()
 		return std::chrono::duration_cast<std::chrono::minutes>(highestTime - time).count() > 2;
 	});
 
-	for (int i = 0; i < min(9, (int)players.size()); ++i)
-	{
-		auto& player = players[i];
-		const char* playerName = g_pSteamFriends->GetFriendPersonaName(player.playerSteamID);
+	if (players.size() > 9)
+		players.erase(players.begin() + 9, players.end());
 
-		printf("https://leetify.com/app/profile/%lld | %s\n", player.playerSteamID.ConvertToUint64(), playerName);
+	std::vector<std::thread> threads;
+	std::vector<LeetifyUser> leetifyUsers;
+	std::mutex mtx;
+	
+	for (const auto& player : players)
+	{
+		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
+			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
+			std::lock_guard<std::mutex> lock(mtx);
+			leetifyUsers.push_back(leetifyUser);
+		});
 	}
+
+	for (auto& thread : threads)
+		thread.join();
+
+	Table tblPlayers;
+	tblPlayers.add_row({ "Name", "Aim", "Positioning", "Utility", "Win Rate", "Leetify Rating", "Premier", "Matches"});
+
+	for (const auto& user : leetifyUsers)
+	{
+		const char* playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
+
+		if (!user.success)
+		{
+			tblPlayers.add_row({ playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A" });
+			continue;
+		}
+
+		tblPlayers.add_row({ playerName, std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning), std::to_string((int)user.recentGameRatings.utility), std::to_string((int)user.winRate) + "%", roundTo(user.recentGameRatings.leetifyRating * 100, 2), std::to_string(user.skillLevel), std::to_string(user.matches)});
+	}
+
+	tblPlayers.format()
+		.multi_byte_characters(true)
+		.locale("en_US.UTF-8");
+
+	for(size_t i = 0; i < 8; ++i)
+		tblPlayers[0][i].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+
+	std::cout << tblPlayers << std::endl;
 
 	printf("Open links in browser (Y/n) ");
 
@@ -129,9 +177,8 @@ int main()
 		return 0;
 	}
 
-	for (int i = 0; i < min(9, (int)players.size()); ++i)
+	for (const auto& player : players)
 	{
-		auto& player = players[i];
 		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
 		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 	}

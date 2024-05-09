@@ -1,5 +1,6 @@
+#pragma once
 
-#include "steam_api.h"
+#include <steam_api.h>
 
 struct Player
 {

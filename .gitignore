@@ -3,3 +3,5 @@
 *.sln
 /vendor/steam
 .vs
+.xmake
+/vsxmake2022
