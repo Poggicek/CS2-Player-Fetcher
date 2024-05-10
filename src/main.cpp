@@ -153,6 +153,11 @@ int main()
 	//std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) { return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating; });
 
 	Table tblPlayers;
+
+	tblPlayers.format()
+		.multi_byte_characters(true)
+		.locale("en_US.UTF-8");
+
 	tblPlayers.add_row({ "Name", "Leetify", "Premier", "Aim", "Pos", "Util", "Wins", "Matches", "FACEIT", "Teammates" });
 
 	for (const auto& user : leetifyUsers)
@@ -182,7 +187,7 @@ int main()
 		if (!user.success)
 		{
 			tblPlayers.add_row({ playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "", teammatesStr.str() });
-			tblPlayers[row].format().font_color(Color::grey).font_style({FontStyle::italic});
+			tblPlayers[row].format().font_color(Color::magenta).font_style({FontStyle::italic});
 			continue;
 		}
 
@@ -202,7 +207,7 @@ int main()
 		});
 
 		auto rowFormat = tblPlayers[row];
-
+		
 		if (leetifyRating >= 1) {
 			rowFormat[1].format().font_color(Color::green);
 		} else if (leetifyRating <= -1) {
@@ -227,10 +232,6 @@ int main()
 			rowFormat[6].format().font_color(Color::red);
 		}
 	}
-
-	tblPlayers.format()
-		.multi_byte_characters(true)
-		.locale("en_US.UTF-8");
 
 	for(size_t i = 0; i < tblPlayers[0].size(); ++i)
 		tblPlayers[0][i].format().font_color(Color::yellow).font_style({ FontStyle::bold });
