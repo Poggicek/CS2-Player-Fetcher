@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_set>
 #include <steam_api.h>
 
 struct LeetifyUser
@@ -9,13 +10,15 @@ struct LeetifyUser
 	int skillLevel = -1;
 	int matches = -1;
 	CSteamID steamID;
+	std::unordered_set<uint64> teammates{};
+	std::string faceitNickname;
 
 	struct RecentGameRatings
 	{
 		float aim = 0.0f;
 		float positioning = 0.0f;
 		float utility = 0.0f;
-		float leetifyRating = 0.0f;
+		float leetifyRating = -100.0f;
 	} recentGameRatings;
 };
 

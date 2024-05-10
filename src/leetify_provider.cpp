@@ -16,14 +16,13 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 {
 	LeetifyUser user;
 	user.steamID = steamID;
-	
+
 	CURL* curl = curl_easy_init();
 	if (curl)
 	{
 		std::string response;
 		auto url = std::format("https://api.leetify.com/api/profile/{}", steamID.ConvertToUint64());
-		//auto url = std::format("https://api.leetify.com/api/profile/76561197972494985");
-		
+
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -47,6 +46,11 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					user.recentGameRatings.positioning = json["recentGameRatings"]["positioning"].get<float>();
 					user.recentGameRatings.utility = json["recentGameRatings"]["utility"].get<float>();
 					user.recentGameRatings.leetifyRating = json["recentGameRatings"]["leetify"].get<float>();
+
+					if (json["meta"].contains("faceitNickname"))
+					{
+						user.faceitNickname = json["meta"]["faceitNickname"].get<std::string>();
+					}
 
 					auto games = json["games"].get<std::vector<nlohmann::json>>();
 
@@ -74,9 +78,28 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 							wins++;
 						else if (matchResult == "tie")
 							ties++;
+
+						auto teammatesGame = game["ownTeamSteam64Ids"].get<std::vector<std::string>>();
+
+						for (const auto& teammateGame : teammatesGame)
+						{
+							auto teammateSteamID = std::stoull(teammateGame);
+
+							if (teammateSteamID != steamID)
+							{
+								user.teammates.insert(teammateSteamID);
+							}
+						}
 					}
 
 					user.winRate = (float)wins / (games.size() - ties) * 100.0f;
+
+					auto teammates = json["teammates"].get<std::vector<nlohmann::json>>();
+
+					for (const auto& teammate : teammates)
+					{
+						user.teammates.insert(std::stoull(teammate["steam64Id"].get<std::string>()));
+					}
 
 					user.success = true;
 				}

@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <filesystem>
@@ -115,7 +115,14 @@ int main()
 		players.emplace_back(playerSteamID, iTimeStamp);
 	}
 
-	std::sort(players.begin(), players.end(), [](const Player& a, const Player& b) { return a.time > b.time; });
+	std::sort(players.begin(), players.end(), [](const Player& a, const Player& b)
+	{
+		if (a.time == b.time) {
+			return a.playerSteamID > b.playerSteamID;
+		}
+
+		return a.time > b.time;
+	});
 
 	std::erase_if(players, [iHighestTimeStamp](const Player& player) {
 		static auto highestTime = std::chrono::system_clock::from_time_t(iHighestTimeStamp);
@@ -130,7 +137,7 @@ int main()
 	std::vector<std::thread> threads;
 	std::vector<LeetifyUser> leetifyUsers;
 	std::mutex mtx;
-	
+
 	for (const auto& player : players)
 	{
 		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
@@ -143,27 +150,89 @@ int main()
 	for (auto& thread : threads)
 		thread.join();
 
+	//std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) { return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating; });
+
 	Table tblPlayers;
-	tblPlayers.add_row({ "Name", "Aim", "Positioning", "Utility", "Win Rate", "Leetify Rating", "Premier", "Matches"});
+	tblPlayers.add_row({ "Name", "Leetify", "Premier", "Aim", "Pos", "Util", "Wins", "Matches", "FACEIT", "Teammates" });
 
 	for (const auto& user : leetifyUsers)
 	{
 		const char* playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
+		auto steamID = user.steamID.ConvertToUint64();
+		auto row = tblPlayers.size();
+		std::vector<std::string> teammates{};
+
+		for (const auto& otherUser : leetifyUsers)
+		{
+			if (otherUser.teammates.contains(steamID))
+			{
+				const char* teammateName = g_pSteamFriends->GetFriendPersonaName(otherUser.steamID);
+				teammates.push_back(teammateName);
+			}
+		}
+
+		std::ostringstream teammatesStr;
+		for (size_t i = 0; i < teammates.size(); ++i) {
+			if (i != 0) {
+				teammatesStr << ", ";
+			}
+			teammatesStr << teammates[i];
+		}
 
 		if (!user.success)
 		{
-			tblPlayers.add_row({ playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A" });
+			tblPlayers.add_row({ playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "", teammatesStr.str() });
+			tblPlayers[row].format().font_color(Color::grey).font_style({FontStyle::italic});
 			continue;
 		}
 
-		tblPlayers.add_row({ playerName, std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning), std::to_string((int)user.recentGameRatings.utility), std::to_string((int)user.winRate) + "%", roundTo(user.recentGameRatings.leetifyRating * 100, 2), std::to_string(user.skillLevel), std::to_string(user.matches)});
+		auto leetifyRating = user.recentGameRatings.leetifyRating * 100;
+
+		tblPlayers.add_row({
+			playerName,
+			(user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2),
+			user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
+			std::to_string((int)user.recentGameRatings.aim),
+			std::to_string((int)user.recentGameRatings.positioning),
+			std::to_string((int)user.recentGameRatings.utility),
+			std::to_string((int)user.winRate) + "%",
+			std::to_string(user.matches),
+			user.faceitNickname,
+			teammatesStr.str()
+		});
+
+		auto rowFormat = tblPlayers[row];
+
+		if (leetifyRating >= 1) {
+			rowFormat[1].format().font_color(Color::green);
+		} else if (leetifyRating <= -1) {
+			rowFormat[1].format().font_color(Color::red);
+		}
+
+		if (user.recentGameRatings.aim >= 60) {
+			rowFormat[3].format().font_color(Color::green);
+		}
+
+		if (user.recentGameRatings.positioning >= 60) {
+			rowFormat[4].format().font_color(Color::green);
+		}
+
+		if (user.recentGameRatings.utility >= 60) {
+			rowFormat[5].format().font_color(Color::green);
+		}
+
+		if (user.winRate >= 55) {
+			rowFormat[6].format().font_color(Color::green);
+		} else if (user.winRate <= 45) {
+			rowFormat[6].format().font_color(Color::red);
+		}
 	}
 
 	tblPlayers.format()
 		.multi_byte_characters(true)
 		.locale("en_US.UTF-8");
 
-	for(size_t i = 0; i < 8; ++i)
+	for(size_t i = 0; i < tblPlayers[0].size(); ++i)
 		tblPlayers[0][i].format().font_color(Color::yellow).font_style({ FontStyle::bold });
 
 	std::cout << tblPlayers << std::endl;
