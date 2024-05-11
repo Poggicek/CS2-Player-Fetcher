@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <filesystem>
+#include <map>
 #include <mutex>
 #include <thread>
 #include <windows.h>
@@ -26,6 +27,7 @@ std::string GetSteamClientDllPath()
 	char value[1024];
 	DWORD size = sizeof(value);
 	lRes = RegQueryValueExA(hKey, "SteamClientDll64", nullptr, nullptr, (LPBYTE)value, &size);
+	RegCloseKey(hKey);
 
 	if (lRes != ERROR_SUCCESS)
 	{
@@ -33,7 +35,6 @@ std::string GetSteamClientDllPath()
 		return "";
 	}
 
-	RegCloseKey(hKey);
 	return std::string(value);
 }
 
@@ -95,22 +96,21 @@ int main()
 	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
 
 	std::vector<Player> players;
-	int iHighestTimeStamp = 0;
 
 	for (int i = 0; i < iPlayers; ++i)
 	{
 		CSteamID playerSteamID = g_pSteamFriends->GetCoplayFriend(i);
-		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
-		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
+		static auto mySteamID = g_pSteamUser->GetSteamID();
 
-		if (playerSteamID == g_pSteamUser->GetSteamID())
+		if (playerSteamID == mySteamID)
 			continue;
+
+		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
 
 		if (app != 730)
 			continue;
 
-		if (iTimeStamp > iHighestTimeStamp)
-			iHighestTimeStamp = iTimeStamp;
+		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
 
 		players.emplace_back(playerSteamID, iTimeStamp);
 	}
@@ -123,6 +123,12 @@ int main()
 
 		return a.time > b.time;
 	});
+
+	int iHighestTimeStamp;
+
+	if (players.size() > 0) {
+		iHighestTimeStamp = players[std::max(5, static_cast<int>(players.size()) - 1)].time;
+	}
 
 	std::erase_if(players, [iHighestTimeStamp](const Player& player) {
 		static auto highestTime = std::chrono::system_clock::from_time_t(iHighestTimeStamp);
@@ -137,12 +143,14 @@ int main()
 	std::vector<std::thread> threads;
 	std::vector<LeetifyUser> leetifyUsers;
 	std::mutex mtx;
+	int lobbyID = 1;
 
 	for (const auto& player : players)
 	{
-		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
+		threads.emplace_back([&lobbyID, &player, &mtx, &leetifyUsers]() {
 			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
 			std::lock_guard<std::mutex> lock(mtx);
+			leetifyUser.lobbyID = lobbyID++;
 			leetifyUsers.push_back(leetifyUser);
 		});
 	}
@@ -150,7 +158,31 @@ int main()
 	for (auto& thread : threads)
 		thread.join();
 
-	//std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) { return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating; });
+	for (auto& user : leetifyUsers) {
+		auto steamID = user.steamID.ConvertToUint64();
+		auto highestLobbyID = user.lobbyID;
+
+		for (auto& otherUser : leetifyUsers) {
+			if (highestLobbyID < otherUser.lobbyID && otherUser.teammates.contains(steamID)) {
+				highestLobbyID = otherUser.lobbyID;
+			}
+		}
+
+		user.lobbyID = highestLobbyID;
+	}
+
+	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) {
+		if (b.lobbyID != a.lobbyID) {
+			return a.lobbyID > b.lobbyID;
+		}
+
+		if (b.recentGameRatings.leetifyRating != a.recentGameRatings.leetifyRating) {
+			return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating;
+
+		}
+
+		return a.steamID > b.steamID;
+	});
 
 	Table tblPlayers;
 
@@ -207,7 +239,7 @@ int main()
 		});
 
 		auto rowFormat = tblPlayers[row];
-		
+
 		if (leetifyRating >= 1) {
 			rowFormat[1].format().font_color(Color::green);
 		} else if (leetifyRating <= -1) {
