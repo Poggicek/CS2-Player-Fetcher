@@ -17,9 +17,7 @@ target("PlayerFetch")
 	end
 
 	if is_plat("linux") then
-		set_arch("i386") --[[steamclient.so is only available in 32-bit]]
-		add_rpathdirs("~/.steam/steam/ubuntu12_32/")
-		add_ldflags("-Wl,--disable-new-dtags") --[[RUNPATH fails to find steamclient.so, fall back to RPATH]]
+		add_rpathdirs("~/.steam/steam/linux64/")
 	end
 
 	set_languages("cxx20")
