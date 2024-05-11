@@ -5,14 +5,23 @@
 #include <map>
 #include <mutex>
 #include <thread>
-#include <windows.h>
 #include <tabulate/table.hpp>
+
+#ifdef _WIN32
+#include <windows.h>
+#define GET_PROC_ADDRESS GetProcAddress
+#else
+#include <dlfcn.h>
+#include <signal.h>
+#define GET_PROC_ADDRESS dlsym
+#endif
 
 #include "main.h"
 #include "leetify_provider.h"
 
 using namespace tabulate;
 
+#ifdef _WIN32
 std::string GetSteamClientDllPath()
 {
 	HKEY hKey;
@@ -37,20 +46,25 @@ std::string GetSteamClientDllPath()
 
 	return std::string(value);
 }
+#endif
 
 void CustomSteamAPIInit()
 {
+#ifdef _WIN32
 	auto steamClientDllPath = GetSteamClientDllPath();
 
 	auto clientModule = LoadLibraryExA(steamClientDllPath.c_str(), 0, 8);
+#else
+	void* clientModule = dlopen("steamclient.so", RTLD_NOW);
+#endif
 
 	if (!clientModule)
 	{
-		printf("Failed to load steamclient64.dll\n");
+		printf("Failed to load steamclient library!\n");
 		return;
 	}
 
-	auto createInterface = (CreateInterfaceFn)GetProcAddress(clientModule, "CreateInterface");
+	auto createInterface = (CreateInterfaceFn)GET_PROC_ADDRESS(clientModule, "CreateInterface");
 
 	g_pSteamClient = (ISteamClient*)createInterface("SteamClient021", nullptr);
 	g_hSteamPipe = g_pSteamClient->CreateSteamPipe();
@@ -70,6 +84,7 @@ void CustomSteamAPIShutdown()
 	g_bSteamAPIInitialized = false;
 }
 
+#ifdef _WIN32
 BOOL WINAPI consoleHandler(DWORD signal)
 {
 	if (signal == CTRL_CLOSE_EVENT || signal == CTRL_C_EVENT || signal == CTRL_BREAK_EVENT)
@@ -79,6 +94,14 @@ BOOL WINAPI consoleHandler(DWORD signal)
 	}
 	return false;
 }
+#else
+void signalHandler(int signal) {
+	if (signal == SIGINT || signal == SIGTERM || signal == SIGQUIT) {
+		CustomSteamAPIShutdown();
+		exit(EXIT_SUCCESS);
+	}
+}
+#endif
 
 std::string roundTo(float value, int decimalPlaces)
 {
@@ -89,8 +112,14 @@ std::string roundTo(float value, int decimalPlaces)
 
 int main()
 {
+#ifdef _WIN32
 	SetConsoleOutputCP(65001);
 	SetConsoleCtrlHandler(consoleHandler, true);
+#else
+	signal(SIGINT, signalHandler);
+	signal(SIGTERM, signalHandler);
+	signal(SIGQUIT, signalHandler);
+#endif
 	CustomSteamAPIInit();
 
 	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
@@ -282,7 +311,11 @@ int main()
 	for (const auto& player : players)
 	{
 		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
+#ifdef _WIN32
 		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#else
+		system(("xdg-open " + url).c_str());
+#endif
 	}
 
 	CustomSteamAPIShutdown();

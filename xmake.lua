@@ -16,5 +16,11 @@ target("PlayerFetch")
 		add_links("advapi32", "shell32")
 	end
 
+	if is_plat("linux") then
+		set_arch("i386") --[[steamclient.so is only available in 32-bit]]
+		add_rpathdirs("~/.steam/steam/ubuntu12_32/")
+		add_ldflags("-Wl,--disable-new-dtags") --[[RUNPATH fails to find steamclient.so, fall back to RPATH]]
+	end
+
 	set_languages("cxx20")
 	set_exceptions("cxx")
