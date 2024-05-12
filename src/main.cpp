@@ -7,6 +7,7 @@
 #include <thread>
 #include <windows.h>
 #include <tabulate/table.hpp>
+#include <cargs.h>
 
 #include "main.h"
 #include "leetify_provider.h"
@@ -87,8 +88,41 @@ std::string roundTo(float value, int decimalPlaces)
 	return stream.str();
 }
 
-int main()
-{
+static struct cag_option options[] = {
+        {.identifier = 'l',
+                .access_letters = "l",
+                .access_name = "leetify",
+                .value_name = NULL,
+                .description = "Open leetify profiles in standard browser"
+        },
+
+        {.identifier = 'h',
+                .access_letters = "h",
+                .access_name = "help",
+                .description = "Shows the command help"
+        },
+};
+
+int main(int argc, char *argv[]) {
+    bool openProfiles = false;
+
+    cag_option_context context;
+    cag_option_init(&context, options, CAG_ARRAY_SIZE(options), argc, argv);
+    while (cag_option_fetch(&context)) {
+        switch (cag_option_get_identifier(&context)) {
+            case 'l':
+                openProfiles = true;
+                break;
+            case 'h':
+                printf("Usage: PlayerFetch [OPTION]...\n");
+                cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);
+                return EXIT_SUCCESS;
+            case '?':
+                cag_option_print_error(&context, stdout);
+                return EXIT_FAILURE;
+        }
+    }
+
 	SetConsoleOutputCP(65001);
 	SetConsoleCtrlHandler(consoleHandler, true);
 	CustomSteamAPIInit();
@@ -270,22 +304,16 @@ int main()
 
 	std::cout << tblPlayers << std::endl;
 
-	printf("Open links in browser (Y/n) ");
-
-	int input = getchar();
-	if (input == 'n' || input == 'N')
+	if (openProfiles)
 	{
-		CustomSteamAPIShutdown();
-		return 0;
+        for (const auto& player : players)
+        {
+            std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
+            ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        }
 	}
 
-	for (const auto& player : players)
-	{
-		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
-		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-	}
-
-	CustomSteamAPIShutdown();
+    CustomSteamAPIShutdown();
 
 	return 0;
 }
