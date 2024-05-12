@@ -161,14 +161,23 @@ int main()
 	for (auto& user : leetifyUsers) {
 		auto steamID = user.steamID.ConvertToUint64();
 		auto highestLobbyID = user.lobbyID;
+		auto found = false;
 
 		for (auto& otherUser : leetifyUsers) {
-			if (highestLobbyID < otherUser.lobbyID && otherUser.teammates.contains(steamID)) {
-				highestLobbyID = otherUser.lobbyID;
+			if (otherUser.teammates.contains(steamID)) {
+				found = true;
+
+				if (highestLobbyID < otherUser.lobbyID) {
+					highestLobbyID = otherUser.lobbyID;
+				}
 			}
 		}
 
-		user.lobbyID = highestLobbyID;
+		if (found) {
+			user.lobbyID = highestLobbyID;
+		} else {
+			user.lobbyID = 0;
+		}
 	}
 
 	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) {
@@ -184,6 +193,7 @@ int main()
 		return a.steamID > b.steamID;
 	});
 
+	int lastSeenLobbyID = -1;
 	Table tblPlayers;
 
 	tblPlayers.format()
@@ -194,6 +204,16 @@ int main()
 
 	for (const auto& user : leetifyUsers)
 	{
+		if (lastSeenLobbyID != user.lobbyID)
+		{
+			if (lastSeenLobbyID != -1)
+			{
+				tblPlayers.add_row({ "" });
+			}
+
+			lastSeenLobbyID = user.lobbyID;
+		}
+
 		const char* playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
 		auto steamID = user.steamID.ConvertToUint64();
 		auto row = tblPlayers.size();
@@ -273,7 +293,7 @@ int main()
 	printf("Open links in browser (Y/n) ");
 
 	int input = getchar();
-	if (input == 'n' || input == 'N')
+	if (input == EOF || input == 'n' || input == 'N')
 	{
 		CustomSteamAPIShutdown();
 		return 0;

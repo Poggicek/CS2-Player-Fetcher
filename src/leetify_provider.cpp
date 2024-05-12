@@ -23,14 +23,15 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 		std::string response;
 		auto url = std::format("https://api.leetify.com/api/profile/{}", steamID.ConvertToUint64());
 
-		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-		CURLcode res = curl_easy_perform(curl);;
+		CURLcode res = curl_easy_perform(curl);
 
 		if (res == CURLE_OK)
 		{
