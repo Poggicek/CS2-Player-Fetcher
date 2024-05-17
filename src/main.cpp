@@ -127,14 +127,11 @@ int main()
 	int iHighestTimeStamp;
 
 	if (players.size() > 0) {
-		iHighestTimeStamp = players[std::max(5, static_cast<int>(players.size()) - 1)].time;
+		iHighestTimeStamp = players[std::min(5, static_cast<int>(players.size()) - 1)].time;
 	}
 
 	std::erase_if(players, [iHighestTimeStamp](const Player& player) {
-		static auto highestTime = std::chrono::system_clock::from_time_t(iHighestTimeStamp);
-		auto time = std::chrono::system_clock::from_time_t(player.time);
-
-		return std::chrono::duration_cast<std::chrono::minutes>(highestTime - time).count() > 2;
+		return iHighestTimeStamp > player.time;
 	});
 
 	if (players.size() > 9)
@@ -158,25 +155,24 @@ int main()
 	for (auto& thread : threads)
 		thread.join();
 
-	for (auto& user : leetifyUsers) {
-		auto steamID = user.steamID.ConvertToUint64();
-		auto highestLobbyID = user.lobbyID;
-		auto found = false;
+	for (int i = 0; i < 4; i++) { // figure out a better algo to sort people into lobbies
+		for (auto& user : leetifyUsers) {
+			auto steamID = user.steamID.ConvertToUint64();
+			auto found = false;
 
-		for (auto& otherUser : leetifyUsers) {
-			if (otherUser.teammates.contains(steamID)) {
-				found = true;
+			for (auto& otherUser : leetifyUsers) {
+				if (otherUser.teammates.contains(steamID)) {
+					found = true;
 
-				if (highestLobbyID < otherUser.lobbyID) {
-					highestLobbyID = otherUser.lobbyID;
+					if (user.lobbyID < otherUser.lobbyID) {
+						user.lobbyID = otherUser.lobbyID;
+					}
 				}
 			}
-		}
 
-		if (found) {
-			user.lobbyID = highestLobbyID;
-		} else {
-			user.lobbyID = 0;
+			if (!found) {
+				user.lobbyID = 0;
+			}
 		}
 	}
 
@@ -187,7 +183,6 @@ int main()
 
 		if (b.recentGameRatings.leetifyRating != a.recentGameRatings.leetifyRating) {
 			return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating;
-
 		}
 
 		return a.steamID > b.steamID;
