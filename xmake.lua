@@ -16,5 +16,9 @@ target("PlayerFetch")
 		add_links("advapi32", "shell32")
 	end
 
+	if is_plat("linux") then
+		add_rpathdirs("~/.steam/steam/linux64/")
+	end
+
 	set_languages("cxx20")
 	set_exceptions("cxx")
