@@ -86,7 +86,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 						{
 							auto teammateSteamID = std::stoull(teammateGame);
 
-							if (teammateSteamID != steamID)
+							if (teammateSteamID != steamID.ConvertToUint64())
 							{
 								user.teammates.insert(teammateSteamID);
 							}
