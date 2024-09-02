@@ -13,7 +13,7 @@ jobs:
         with:
           xmake-version: latest
       - name: Build project
-        run: xmake
+        run: xmake -y
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
