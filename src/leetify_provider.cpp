@@ -95,11 +95,14 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 					user.winRate = (float)wins / (games.size() - ties) * 100.0f;
 
-					auto teammates = json["teammates"].get<std::vector<nlohmann::json>>();
-
-					for (const auto& teammate : teammates)
+					if (json["teammates"].is_array())
 					{
-						user.teammates.insert(std::stoull(teammate["steam64Id"].get<std::string>()));
+						auto teammates = json["teammates"].get<std::vector<nlohmann::json>>();
+
+						for (const auto& teammate : teammates)
+						{
+							user.teammates.insert(std::stoull(teammate["steam64Id"].get<std::string>()));
+						}
 					}
 
 					user.success = true;
