@@ -13,6 +13,7 @@ target("PlayerFetch")
 	})
 
 	if is_plat("windows") then
+		add_files("icon.rc")
 		add_links("advapi32", "shell32")
 	end
 
