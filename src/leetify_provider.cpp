@@ -112,9 +112,21 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					printf("error %s\n", e.what());
 				}
 			}
+			else
+			{
+				printf("failed to perform leetify request: HTTP %d\n", response_code);
+			}
+		}
+		else
+		{
+			printf("failed to perform curl: error %d\n", res);
 		}
 
 		curl_easy_cleanup(curl);
+	}
+	else
+	{
+		printf("failed to curl_easy_init\n");
 	}
 
 	return user;

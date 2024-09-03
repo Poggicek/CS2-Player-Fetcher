@@ -1,6 +1,6 @@
 add_rules("mode.debug", "mode.release")
 add_requires("nlohmann_json", "tabulate")
-add_requires("libcurl", {configs = {mbedtls = true}})
+add_requires("libcurl", {configs = {winssl = true}})
 
 target("PlayerFetch")
 	set_kind("binary")
