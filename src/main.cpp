@@ -64,7 +64,9 @@ void CustomSteamAPIInit()
 void CustomSteamAPIShutdown()
 {
 	if (!g_bSteamAPIInitialized)
+	{
 		return;
+	}
 
 	g_pSteamClient->ReleaseUser(g_hSteamPipe, g_hSteamUser);
 	g_pSteamClient->BReleaseSteamPipe(g_hSteamPipe);
@@ -104,12 +106,16 @@ int main()
 		static auto mySteamID = g_pSteamUser->GetSteamID();
 
 		if (playerSteamID == mySteamID)
+		{
 			continue;
+		}
 
 		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
 
 		if (app != 730)
+		{
 			continue;
+		}
 
 		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
 
@@ -135,7 +141,9 @@ int main()
 	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
 
 	if (players.size() > 9)
+	{
 		players.erase(players.begin() + 9, players.end());
+	}
 
 	std::vector<std::thread> threads;
 	std::vector<LeetifyUser> leetifyUsers;
@@ -151,7 +159,9 @@ int main()
 	}
 
 	for (auto &thread : threads)
+	{
 		thread.join();
+	}
 
 	// Lobby grouping algorithm that handles partial teammate data
 	std::unordered_map<uint64, int> steamIDToLobbyID;
@@ -347,7 +357,9 @@ int main()
 	}
 
 	for (size_t i = 0; i < tblPlayers[0].size(); ++i)
+	{
 		tblPlayers[0][i].format().font_color(Color::yellow).font_style({FontStyle::bold});
+	}
 
 	std::cout << tblPlayers << std::endl;
 

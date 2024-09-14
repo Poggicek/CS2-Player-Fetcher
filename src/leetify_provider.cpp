@@ -69,7 +69,9 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					}
 
 					if (games.size() > 30)
+					{
 						games.erase(games.begin() + 30, games.end());
+					}
 
 					int wins = 0;
 					int ties = 0;
@@ -78,9 +80,13 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					{
 						auto matchResult = game["matchResult"].get<std::string>();
 						if (matchResult == "win")
+						{
 							wins++;
+						}
 						else if (matchResult == "tie")
+						{
 							ties++;
+						}
 
 						auto teammatesGame = game["ownTeamSteam64Ids"].get<std::vector<std::string>>();
 

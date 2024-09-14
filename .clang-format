@@ -4,3 +4,4 @@ BasedOnStyle:    Microsoft
 UseTab:          ForIndentation
 TabWidth:        4
 ColumnLimit:     120
+InsertBraces:    true
