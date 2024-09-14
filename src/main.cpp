@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <curl/curl.h>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -149,6 +150,8 @@ int main()
 	std::vector<LeetifyUser> leetifyUsers;
 	std::mutex mtx;
 
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+
 	for (const auto &player : players)
 	{
 		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
@@ -162,6 +165,8 @@ int main()
 	{
 		thread.join();
 	}
+
+	curl_global_cleanup();
 
 	// Lobby grouping algorithm that handles partial teammate data
 	std::unordered_map<uint64, int> steamIDToLobbyID;
