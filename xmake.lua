@@ -1,6 +1,6 @@
 add_rules("mode.debug", "mode.release")
 add_requires("nlohmann_json", "tabulate")
-add_requires("libcurl", {configs = {winssl = true}})
+add_requires("libcurl")
 
 target("PlayerFetch")
 	set_kind("binary")
@@ -14,7 +14,7 @@ target("PlayerFetch")
 
 	if is_plat("windows") then
 		add_files("icon.rc")
-		add_links("advapi32", "shell32")
+		add_links("shell32")
 	end
 
 	set_languages("cxx20")
