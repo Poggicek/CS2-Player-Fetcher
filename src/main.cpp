@@ -336,6 +336,27 @@ int main()
 			rowFormat[1].format().font_color(Color::red);
 		}
 
+		if (user.skillLevel >= 30000)
+		{
+			rowFormat[2].format().font_color(Color::yellow);
+		}
+		else if (user.skillLevel >= 25000)
+		{
+			rowFormat[2].format().font_color(Color::red);
+		}
+		else if (user.skillLevel >= 20000)
+		{
+			rowFormat[2].format().font_color(Color::magenta);
+		}
+		else if (user.skillLevel >= 15000)
+		{
+			rowFormat[2].format().font_color(Color::blue);
+		}
+		else if (user.skillLevel >= 10000)
+		{
+			rowFormat[2].format().font_color(Color::grey);
+		}
+
 		if (user.recentGameRatings.aim >= 60)
 		{
 			rowFormat[3].format().font_color(Color::green);
