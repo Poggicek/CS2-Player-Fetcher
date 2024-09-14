@@ -1,6 +1,7 @@
 # CS2 Player Fetcher
 
-CS2 Player Fetcher is a C++ application that retrieves and displays information about Counter-Strike 2 players you've recently played with.
+CS2 Player Fetcher is a C++ application that retrieves and displays information about Counter-Strike 2 players you've recently played with
+(this includes the players in the current match you are in).
 It tries to filter the players to ones in your current server.
 It uses the Steam API and Leetify API to gather data and present it in a neatly formatted table.
 
