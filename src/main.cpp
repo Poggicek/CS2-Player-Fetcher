@@ -168,86 +168,52 @@ int main()
 
 	curl_global_cleanup();
 
-	// Lobby grouping algorithm that handles partial teammate data
-	std::unordered_map<uint64, int> steamIDToLobbyID;
 	int nextLobbyID = 1;
 
-	// First pass: Assign initial lobby IDs based on known teammate relationships
+	// Helper function to find a user by Steam ID
+	auto findUserBySteamID = [&leetifyUsers](uint64 steamID) {
+		return std::find_if(leetifyUsers.begin(), leetifyUsers.end(),
+		                    [steamID](const LeetifyUser &u) { return u.steamID.ConvertToUint64() == steamID; });
+	};
+
+	// Assign lobby IDs and handle single-player lobbies in a single pass
 	for (auto &user : leetifyUsers)
 	{
-		uint64 steamID = user.steamID.ConvertToUint64();
-
-		// If this user is already assigned to a lobby, skip
-		if (steamIDToLobbyID.find(steamID) != steamIDToLobbyID.end())
+		if (user.lobbyID == 0)
 		{
-			continue;
-		}
+			user.lobbyID = nextLobbyID++;
+			bool hasTeammate = false;
 
-		// Create a new lobby for this user
-		int currentLobbyID = nextLobbyID++;
-		steamIDToLobbyID[steamID] = currentLobbyID;
-
-		// Assign the same lobby ID to all known teammates
-		for (const auto &teammateSteamID : user.teammates)
-		{
-			// If the teammate is already in a different lobby, merge the lobbies
-			auto it = steamIDToLobbyID.find(teammateSteamID);
-			if (it != steamIDToLobbyID.end())
+			for (const auto &teammateSteamID : user.teammates)
 			{
-				int oldLobbyID = it->second;
-				if (oldLobbyID != currentLobbyID)
+				auto teammateIt = findUserBySteamID(teammateSteamID);
+				if (teammateIt != leetifyUsers.end())
 				{
-					for (auto &[id, lobbyID] : steamIDToLobbyID)
+					hasTeammate = true;
+					if (teammateIt->lobbyID != 0 && teammateIt->lobbyID != user.lobbyID)
 					{
-						if (lobbyID == oldLobbyID)
+						// Merge lobbies
+						int oldLobbyID = teammateIt->lobbyID;
+						for (auto &u : leetifyUsers)
 						{
-							lobbyID = currentLobbyID;
+							if (u.lobbyID == oldLobbyID)
+							{
+								u.lobbyID = user.lobbyID;
+							}
 						}
+					}
+					else
+					{
+						teammateIt->lobbyID = user.lobbyID;
 					}
 				}
 			}
-			else
+
+			// Reset lobby ID if it's a single-player lobby
+			if (!hasTeammate)
 			{
-				steamIDToLobbyID[teammateSteamID] = currentLobbyID;
+				user.lobbyID = 0;
 			}
-		}
-	}
-
-	std::unordered_map<int, int> lobbyCounts;
-
-	// Second pass: Group remaining players based on shared teammates
-	for (auto &user : leetifyUsers)
-	{
-		uint64 steamID = user.steamID.ConvertToUint64();
-
-		for (const auto &teammateSteamID : user.teammates)
-		{
-			auto it = steamIDToLobbyID.find(teammateSteamID);
-			if (it != steamIDToLobbyID.end())
-			{
-				steamIDToLobbyID[steamID] = it->second;
-				break;
-			}
-		}
-
-		// If still not assigned, create a new lobby
-		if (steamIDToLobbyID.find(steamID) == steamIDToLobbyID.end())
-		{
-			steamIDToLobbyID[steamID] = nextLobbyID++;
-		}
-
-		lobbyCounts[steamIDToLobbyID[steamID]]++;
-	}
-
-	// Assign final lobby IDs to users
-	for (auto &user : leetifyUsers)
-	{
-		uint64 steamID = user.steamID.ConvertToUint64();
-		user.lobbyID = steamIDToLobbyID[steamID];
-
-		if (lobbyCounts[user.lobbyID] <= 1)
-		{
-			user.lobbyID = 0;
 		}
 	}
 
