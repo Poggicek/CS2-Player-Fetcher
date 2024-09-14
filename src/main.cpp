@@ -3,14 +3,14 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <tabulate/table.hpp>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 #include <windows.h>
-#include <tabulate/table.hpp>
 
-#include "main.h"
 #include "leetify_provider.h"
+#include "main.h"
 
 using namespace tabulate;
 
@@ -53,7 +53,7 @@ void CustomSteamAPIInit()
 
 	auto createInterface = (CreateInterfaceFn)GetProcAddress(clientModule, "CreateInterface");
 
-	g_pSteamClient = (ISteamClient*)createInterface("SteamClient021", nullptr);
+	g_pSteamClient = (ISteamClient *)createInterface("SteamClient021", nullptr);
 	g_hSteamPipe = g_pSteamClient->CreateSteamPipe();
 	g_hSteamUser = g_pSteamClient->ConnectToGlobalUser(g_hSteamPipe);
 	g_pSteamFriends = g_pSteamClient->GetISteamFriends(g_hSteamUser, g_hSteamPipe, "SteamFriends017");
@@ -63,7 +63,7 @@ void CustomSteamAPIInit()
 
 void CustomSteamAPIShutdown()
 {
-	if(!g_bSteamAPIInitialized)
+	if (!g_bSteamAPIInitialized)
 		return;
 
 	g_pSteamClient->ReleaseUser(g_hSteamPipe, g_hSteamUser);
@@ -116,9 +116,9 @@ int main()
 		players.emplace_back(playerSteamID, iTimeStamp);
 	}
 
-	std::sort(players.begin(), players.end(), [](const Player& a, const Player& b)
-	{
-		if (a.time == b.time) {
+	std::sort(players.begin(), players.end(), [](const Player &a, const Player &b) {
+		if (a.time == b.time)
+		{
 			return a.playerSteamID > b.playerSteamID;
 		}
 
@@ -127,13 +127,12 @@ int main()
 
 	int iHighestTimeStamp;
 
-	if (players.size() > 0) {
+	if (players.size() > 0)
+	{
 		iHighestTimeStamp = players[std::min(5, static_cast<int>(players.size()) - 1)].time;
 	}
 
-	std::erase_if(players, [iHighestTimeStamp](const Player& player) {
-		return iHighestTimeStamp > player.time;
-	});
+	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
 
 	if (players.size() > 9)
 		players.erase(players.begin() + 9, players.end());
@@ -142,7 +141,7 @@ int main()
 	std::vector<LeetifyUser> leetifyUsers;
 	std::mutex mtx;
 
-	for (const auto& player : players)
+	for (const auto &player : players)
 	{
 		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
 			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
@@ -151,7 +150,7 @@ int main()
 		});
 	}
 
-	for (auto& thread : threads)
+	for (auto &thread : threads)
 		thread.join();
 
 	// Lobby grouping algorithm that handles partial teammate data
@@ -159,11 +158,13 @@ int main()
 	int nextLobbyID = 1;
 
 	// First pass: Assign initial lobby IDs based on known teammate relationships
-	for (auto& user : leetifyUsers) {
+	for (auto &user : leetifyUsers)
+	{
 		uint64 steamID = user.steamID.ConvertToUint64();
 
 		// If this user is already assigned to a lobby, skip
-		if (steamIDToLobbyID.find(steamID) != steamIDToLobbyID.end()) {
+		if (steamIDToLobbyID.find(steamID) != steamIDToLobbyID.end())
+		{
 			continue;
 		}
 
@@ -172,19 +173,26 @@ int main()
 		steamIDToLobbyID[steamID] = currentLobbyID;
 
 		// Assign the same lobby ID to all known teammates
-		for (const auto& teammateSteamID : user.teammates) {
+		for (const auto &teammateSteamID : user.teammates)
+		{
 			// If the teammate is already in a different lobby, merge the lobbies
 			auto it = steamIDToLobbyID.find(teammateSteamID);
-			if (it != steamIDToLobbyID.end()) {
+			if (it != steamIDToLobbyID.end())
+			{
 				int oldLobbyID = it->second;
-				if (oldLobbyID != currentLobbyID) {
-					for (auto& [id, lobbyID] : steamIDToLobbyID) {
-						if (lobbyID == oldLobbyID) {
+				if (oldLobbyID != currentLobbyID)
+				{
+					for (auto &[id, lobbyID] : steamIDToLobbyID)
+					{
+						if (lobbyID == oldLobbyID)
+						{
 							lobbyID = currentLobbyID;
 						}
 					}
 				}
-			} else {
+			}
+			else
+			{
 				steamIDToLobbyID[teammateSteamID] = currentLobbyID;
 			}
 		}
@@ -193,19 +201,23 @@ int main()
 	std::unordered_map<int, int> lobbyCounts;
 
 	// Second pass: Group remaining players based on shared teammates
-	for (auto& user : leetifyUsers) {
+	for (auto &user : leetifyUsers)
+	{
 		uint64 steamID = user.steamID.ConvertToUint64();
 
-		for (const auto& teammateSteamID : user.teammates) {
+		for (const auto &teammateSteamID : user.teammates)
+		{
 			auto it = steamIDToLobbyID.find(teammateSteamID);
-			if (it != steamIDToLobbyID.end()) {
+			if (it != steamIDToLobbyID.end())
+			{
 				steamIDToLobbyID[steamID] = it->second;
 				break;
 			}
 		}
 
 		// If still not assigned, create a new lobby
-		if (steamIDToLobbyID.find(steamID) == steamIDToLobbyID.end()) {
+		if (steamIDToLobbyID.find(steamID) == steamIDToLobbyID.end())
+		{
 			steamIDToLobbyID[steamID] = nextLobbyID++;
 		}
 
@@ -213,22 +225,26 @@ int main()
 	}
 
 	// Assign final lobby IDs to users
-	for (auto& user : leetifyUsers) {
+	for (auto &user : leetifyUsers)
+	{
 		uint64 steamID = user.steamID.ConvertToUint64();
 		user.lobbyID = steamIDToLobbyID[steamID];
 
-		if (lobbyCounts[user.lobbyID] <= 1) {
+		if (lobbyCounts[user.lobbyID] <= 1)
+		{
 			user.lobbyID = 0;
 		}
 	}
 
 	// Sort users by lobby ID and then by Leetify rating
-	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser& a, const LeetifyUser& b) {
-		if (b.lobbyID != a.lobbyID) {
+	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser &a, const LeetifyUser &b) {
+		if (b.lobbyID != a.lobbyID)
+		{
 			return a.lobbyID > b.lobbyID;
 		}
 
-		if (b.recentGameRatings.leetifyRating != a.recentGameRatings.leetifyRating) {
+		if (b.recentGameRatings.leetifyRating != a.recentGameRatings.leetifyRating)
+		{
 			return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating;
 		}
 
@@ -238,41 +254,41 @@ int main()
 	int lastSeenLobbyID = -1;
 	Table tblPlayers;
 
-	tblPlayers.format()
-		.multi_byte_characters(true)
-		.locale("en_US.UTF-8");
+	tblPlayers.format().multi_byte_characters(true).locale("en_US.UTF-8");
 
-	tblPlayers.add_row({ "Name", "Leetify", "Premier", "Aim", "Pos", "Util", "Wins", "Matches", "FACEIT", "Teammates" });
+	tblPlayers.add_row({"Name", "Leetify", "Premier", "Aim", "Pos", "Util", "Wins", "Matches", "FACEIT", "Teammates"});
 
-	for (const auto& user : leetifyUsers)
+	for (const auto &user : leetifyUsers)
 	{
 		if (lastSeenLobbyID != user.lobbyID)
 		{
 			if (lastSeenLobbyID != -1)
 			{
-				tblPlayers.add_row({ "" });
+				tblPlayers.add_row({""});
 			}
 
 			lastSeenLobbyID = user.lobbyID;
 		}
 
-		const char* playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
+		const char *playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
 		auto steamID = user.steamID.ConvertToUint64();
 		auto row = tblPlayers.size();
 		std::vector<std::string> teammates{};
 
-		for (const auto& otherUser : leetifyUsers)
+		for (const auto &otherUser : leetifyUsers)
 		{
 			if (otherUser.teammates.contains(steamID))
 			{
-				const char* teammateName = g_pSteamFriends->GetFriendPersonaName(otherUser.steamID);
+				const char *teammateName = g_pSteamFriends->GetFriendPersonaName(otherUser.steamID);
 				teammates.push_back(teammateName);
 			}
 		}
 
 		std::ostringstream teammatesStr;
-		for (size_t i = 0; i < teammates.size(); ++i) {
-			if (i != 0) {
+		for (size_t i = 0; i < teammates.size(); ++i)
+		{
+			if (i != 0)
+			{
 				teammatesStr << ", ";
 			}
 			teammatesStr << teammates[i];
@@ -280,55 +296,58 @@ int main()
 
 		if (!user.success)
 		{
-			tblPlayers.add_row({ playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "", teammatesStr.str() });
+			tblPlayers.add_row({playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "", teammatesStr.str()});
 			tblPlayers[row].format().font_color(Color::magenta).font_style({FontStyle::italic});
 			continue;
 		}
 
 		auto leetifyRating = user.recentGameRatings.leetifyRating * 100;
 
-		tblPlayers.add_row({
-			playerName,
-			(user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2),
-			user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
-			std::to_string((int)user.recentGameRatings.aim),
-			std::to_string((int)user.recentGameRatings.positioning),
-			std::to_string((int)user.recentGameRatings.utility),
-			std::to_string((int)user.winRate) + "%",
-			std::to_string(user.matches),
-			user.faceitNickname,
-			teammatesStr.str()
-		});
+		tblPlayers.add_row(
+		    {playerName, (user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2),
+		     user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
+		     std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning),
+		     std::to_string((int)user.recentGameRatings.utility), std::to_string((int)user.winRate) + "%",
+		     std::to_string(user.matches), user.faceitNickname, teammatesStr.str()});
 
 		auto rowFormat = tblPlayers[row];
 
-		if (leetifyRating >= 1) {
+		if (leetifyRating >= 1)
+		{
 			rowFormat[1].format().font_color(Color::green);
-		} else if (leetifyRating <= -1) {
+		}
+		else if (leetifyRating <= -1)
+		{
 			rowFormat[1].format().font_color(Color::red);
 		}
 
-		if (user.recentGameRatings.aim >= 60) {
+		if (user.recentGameRatings.aim >= 60)
+		{
 			rowFormat[3].format().font_color(Color::green);
 		}
 
-		if (user.recentGameRatings.positioning >= 60) {
+		if (user.recentGameRatings.positioning >= 60)
+		{
 			rowFormat[4].format().font_color(Color::green);
 		}
 
-		if (user.recentGameRatings.utility >= 60) {
+		if (user.recentGameRatings.utility >= 60)
+		{
 			rowFormat[5].format().font_color(Color::green);
 		}
 
-		if (user.winRate >= 55) {
+		if (user.winRate >= 55)
+		{
 			rowFormat[6].format().font_color(Color::green);
-		} else if (user.winRate <= 45) {
+		}
+		else if (user.winRate <= 45)
+		{
 			rowFormat[6].format().font_color(Color::red);
 		}
 	}
 
-	for(size_t i = 0; i < tblPlayers[0].size(); ++i)
-		tblPlayers[0][i].format().font_color(Color::yellow).font_style({ FontStyle::bold });
+	for (size_t i = 0; i < tblPlayers[0].size(); ++i)
+		tblPlayers[0][i].format().font_color(Color::yellow).font_style({FontStyle::bold});
 
 	std::cout << tblPlayers << std::endl;
 
@@ -341,7 +360,7 @@ int main()
 		return 0;
 	}
 
-	for (const auto& player : players)
+	for (const auto &player : players)
 	{
 		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
 		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);

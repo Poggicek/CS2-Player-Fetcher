@@ -1,14 +1,13 @@
+#include <algorithm>
+#include <curl/curl.h>
 #include <format>
 #include <nlohmann/json.hpp>
-#include <curl/curl.h>
-#include <algorithm>
 
 #include "leetify_provider.h"
 
-
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userp)
 {
-	userp->append((char*)contents, size * nmemb);
+	userp->append((char *)contents, size * nmemb);
 	return size * nmemb;
 }
 
@@ -17,13 +16,14 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 	LeetifyUser user;
 	user.steamID = steamID;
 
-	CURL* curl = curl_easy_init();
+	CURL *curl = curl_easy_init();
 	if (curl)
 	{
 		std::string response;
 		auto url = std::format("https://api.leetify.com/api/profile/{}", steamID.ConvertToUint64());
 
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT,
+		                 "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -40,7 +40,8 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 			if (response_code == 200)
 			{
-				try {
+				try
+				{
 					auto json = nlohmann::json::parse(response.c_str());
 
 					user.recentGameRatings.aim = json["recentGameRatings"]["aim"].get<float>();
@@ -57,8 +58,9 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 					user.matches = games.size();
 
-					auto mmGames = std::find_if(games.begin(), games.end(), [&](const nlohmann::json& game) {
-						return game["dataSource"].get<std::string>() == "matchmaking" && !game["rankType"].is_null() && game.value("rankType", -1) == 11;
+					auto mmGames = std::find_if(games.begin(), games.end(), [&](const nlohmann::json &game) {
+						return game["dataSource"].get<std::string>() == "matchmaking" && !game["rankType"].is_null() &&
+						       game.value("rankType", -1) == 11;
 					});
 
 					if (mmGames != games.end())
@@ -72,7 +74,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					int wins = 0;
 					int ties = 0;
 
-					for (const auto& game : games)
+					for (const auto &game : games)
 					{
 						auto matchResult = game["matchResult"].get<std::string>();
 						if (matchResult == "win")
@@ -82,7 +84,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 						auto teammatesGame = game["ownTeamSteam64Ids"].get<std::vector<std::string>>();
 
-						for (const auto& teammateGame : teammatesGame)
+						for (const auto &teammateGame : teammatesGame)
 						{
 							auto teammateSteamID = std::stoull(teammateGame);
 
@@ -99,7 +101,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 					{
 						auto teammates = json["teammates"].get<std::vector<nlohmann::json>>();
 
-						for (const auto& teammate : teammates)
+						for (const auto &teammate : teammates)
 						{
 							user.teammates.insert(std::stoull(teammate["steam64Id"].get<std::string>()));
 						}
@@ -107,7 +109,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 					user.success = true;
 				}
-				catch (const std::exception& e)
+				catch (const std::exception &e)
 				{
 					printf("error %s\n", e.what());
 				}
