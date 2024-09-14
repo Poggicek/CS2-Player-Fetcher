@@ -342,7 +342,7 @@ int main()
 
 		if (user.recentGameRatings.aim >= 85)
 		{
-			rowFormat[3].format().font_color(Color::yellow);
+			rowFormat[3].format().font_color(Color::red);
 		}
 		else if (user.recentGameRatings.aim >= 60)
 		{
