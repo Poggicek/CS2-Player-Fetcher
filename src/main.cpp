@@ -327,7 +327,11 @@ int main()
 
 		auto rowFormat = tblPlayers[row];
 
-		if (leetifyRating >= 1)
+		if (leetifyRating >= 5)
+		{
+			rowFormat[1].format().font_color(Color::yellow);
+		}
+		else if (leetifyRating >= 1)
 		{
 			rowFormat[1].format().font_color(Color::green);
 		}
@@ -354,10 +358,14 @@ int main()
 		}
 		else if (user.skillLevel >= 10000)
 		{
-			rowFormat[2].format().font_color(Color::grey);
+			rowFormat[2].format().font_color(Color::cyan);
 		}
 
-		if (user.recentGameRatings.aim >= 60)
+		if (user.recentGameRatings.aim >= 85)
+		{
+			rowFormat[3].format().font_color(Color::yellow);
+		}
+		else if (user.recentGameRatings.aim >= 60)
 		{
 			rowFormat[3].format().font_color(Color::green);
 		}
