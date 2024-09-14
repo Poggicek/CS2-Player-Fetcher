@@ -57,6 +57,30 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 
 					auto games = json["games"].get<std::vector<nlohmann::json>>();
 
+					auto now = std::chrono::system_clock::now();
+					auto twoMonthsAgo = now - std::chrono::hours(24 * 60);
+
+					auto latestFaceitGame =
+					    std::find_if(games.begin(), games.end(), [&twoMonthsAgo](const nlohmann::json &game) {
+						    if (game["dataSource"].get<std::string>() != "faceit")
+						    {
+							    return false;
+						    }
+
+						    auto gameFinishedAt = game["gameFinishedAt"].get<std::string>();
+						    std::tm tm = {};
+						    std::istringstream ss(gameFinishedAt);
+						    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+						    auto gameTime = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+
+						    return gameTime > twoMonthsAgo;
+					    });
+
+					if (latestFaceitGame != games.end())
+					{
+						user.faceitElo = latestFaceitGame->value("elo", -1);
+					}
+
 					user.matches = games.size();
 
 					auto mmGames = std::find_if(games.begin(), games.end(), [&](const nlohmann::json &game) {

@@ -300,7 +300,9 @@ int main()
 		     user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
 		     std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning),
 		     std::to_string((int)user.recentGameRatings.utility), std::to_string((int)user.winRate) + "%",
-		     std::to_string(user.matches), user.faceitNickname, teammatesStr.str()});
+		     std::to_string(user.matches),
+		     (user.faceitElo > 0 ? "[" + std::to_string(user.faceitElo) + "] " : "") + user.faceitNickname,
+		     teammatesStr.str()});
 
 		auto rowFormat = tblPlayers[row];
 
@@ -364,6 +366,15 @@ int main()
 		else if (user.winRate <= 45)
 		{
 			rowFormat[6].format().font_color(Color::red);
+		}
+
+		if (user.faceitElo >= 2001)
+		{
+			rowFormat[8].format().font_color(Color::red);
+		}
+		else if (user.faceitElo >= 1701)
+		{
+			rowFormat[8].format().font_color(Color::magenta);
 		}
 	}
 

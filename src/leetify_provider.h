@@ -10,6 +10,7 @@ struct LeetifyUser
 	int skillLevel = -1;
 	int matches = -1;
 	int lobbyID = 0;
+	int faceitElo = -1;
 	CSteamID steamID;
 	std::set<uint64> teammates{};
 	std::string faceitNickname;
