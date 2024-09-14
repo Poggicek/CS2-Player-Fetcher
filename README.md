@@ -11,3 +11,11 @@ It uses the Steam API and Leetify API to gather data and present it in a neatly 
 - Provides an option to open Leetify profile links for each player
 
 This project is not affiliated with or endorsed by Valve or Leetify. Use at your own risk.
+
+### Download
+
+You can download the latest build [from the Actions page](https://github.com/Poggicek/CS2-Player-Fetcher/actions)
+if you are logged in to GitHub.
+
+Otherwise, use [the nightly link](https://nightly.link/Poggicek/CS2-Player-Fetcher/workflows/build/master/artifact.zip)
+to get a direct download.
