@@ -251,16 +251,27 @@ int main()
 			lastSeenLobbyID = user.lobbyID;
 		}
 
-		const char *playerName = g_pSteamFriends->GetFriendPersonaName(user.steamID);
+		auto playerName = std::string(g_pSteamFriends->GetFriendPersonaName(user.steamID));
 		auto steamID = user.steamID.ConvertToUint64();
 		auto row = tblPlayers.size();
 		std::vector<std::string> teammates{};
+
+		if (playerName == "" || playerName == "[unknown]")
+		{
+			playerName = user.name;
+		}
 
 		for (const auto &otherUser : leetifyUsers)
 		{
 			if (otherUser.teammates.contains(steamID))
 			{
-				const char *teammateName = g_pSteamFriends->GetFriendPersonaName(otherUser.steamID);
+				auto teammateName = std::string(g_pSteamFriends->GetFriendPersonaName(otherUser.steamID));
+
+				if (teammateName == "" || teammateName == "[unknown]")
+				{
+					teammateName = otherUser.name;
+				}
+
 				teammates.push_back(teammateName);
 			}
 		}

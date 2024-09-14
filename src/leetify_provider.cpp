@@ -44,6 +44,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 				{
 					auto json = nlohmann::json::parse(response.c_str());
 
+					user.name = json["meta"]["name"].get<std::string>();
 					user.recentGameRatings.aim = json["recentGameRatings"]["aim"].get<float>();
 					user.recentGameRatings.positioning = json["recentGameRatings"]["positioning"].get<float>();
 					user.recentGameRatings.utility = json["recentGameRatings"]["utility"].get<float>();

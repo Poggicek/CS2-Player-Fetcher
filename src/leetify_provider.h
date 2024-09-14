@@ -13,6 +13,7 @@ struct LeetifyUser
 	CSteamID steamID;
 	std::set<uint64> teammates{};
 	std::string faceitNickname;
+	std::string name;
 
 	struct RecentGameRatings
 	{
