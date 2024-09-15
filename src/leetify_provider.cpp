@@ -76,7 +76,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 						    return gameTime > twoMonthsAgo;
 					    });
 
-					if (latestFaceitGame != games.end())
+					if (latestFaceitGame != games.end() && !latestFaceitGame->at("elo").is_null())
 					{
 						user.faceitElo = latestFaceitGame->value("elo", -1);
 					}
@@ -142,6 +142,7 @@ LeetifyUser GetLeetifyUser(CSteamID steamID)
 				}
 				catch (const std::exception &e)
 				{
+					printf("fail: %llu", steamID.ConvertToUint64());
 					printf("error %s\n", e.what());
 				}
 			}
