@@ -181,50 +181,41 @@ int main()
 	{
 		if (user.lobbyID == 0)
 		{
-			// First check if any of their teammates already have a lobby
-			bool foundTeammateLobby = false;
-			for (const auto& teammateSteamID : user.teammates)
+			user.lobbyID = nextLobbyID++;
+			bool hasTeammate = false;
+
+			for (const auto &teammateSteamID : user.teammates)
 			{
 				auto teammateIt = findUserBySteamID(teammateSteamID);
-				if (teammateIt != leetifyUsers.end() && teammateIt->lobbyID != 0)
+				if (teammateIt != leetifyUsers.end())
 				{
-					user.lobbyID = teammateIt->lobbyID;
-					foundTeammateLobby = true;
-					break;
+					hasTeammate = true;
+					if (teammateIt->lobbyID != 0 && teammateIt->lobbyID != user.lobbyID)
+					{
+						// Merge lobbies
+						int oldLobbyID = teammateIt->lobbyID;
+						for (auto &u : leetifyUsers)
+						{
+							if (u.lobbyID == oldLobbyID)
+							{
+								u.lobbyID = user.lobbyID;
+							}
+						}
+					}
+					else
+					{
+						teammateIt->lobbyID = user.lobbyID;
+					}
 				}
 			}
 
-			// If no teammate lobby found and user has teammates, create new lobby
-			if (!foundTeammateLobby && !user.teammates.empty())
+			// Reset lobby ID if it's a single-player lobby
+			if (!hasTeammate)
 			{
-				user.lobbyID = nextLobbyID++;
+				user.lobbyID = 0;
 			}
-			// If no teammates, keep lobby as 0
 		}
 	}
-
-	// Second pass to ensure all teammates are in the same lobby
-	bool changed;
-	do {
-		changed = false;
-		for (auto& user : leetifyUsers)
-		{
-			if (user.teammates.empty())
-			{
-				user.lobbyID = 0;  // Ensure solo players stay in lobby 0
-				continue;
-			}
-
-			for (const auto& teammateSteamID : user.teammates)
-			{
-				auto teammateIt = findUserBySteamID(teammateSteamID);
-				if (teammateIt != leetifyUsers.end() && teammateIt->lobbyID != user.lobbyID) {
-					teammateIt->lobbyID = user.lobbyID;
-					changed = true;
-				}
-			}
-		}
-	} while (changed);
 
 	// Sort users by lobby ID and then by Leetify rating
 	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser &a, const LeetifyUser &b) {
