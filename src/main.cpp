@@ -263,62 +263,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 
 	curl_global_cleanup();
 
-	int nextLobbyID = 1;
-
 	// Helper function to find a user by Steam ID
 	auto findUserBySteamID = [&leetifyUsers](uint64 steamID) {
 		return std::find_if(leetifyUsers.begin(), leetifyUsers.end(),
 		                    [steamID](const LeetifyUser &u) { return u.steamID.ConvertToUint64() == steamID; });
 	};
 
-	// Assign lobby IDs and handle single-player lobbies in a single pass
-	for (auto &user : leetifyUsers)
-	{
-		if (user.lobbyID == 0)
-		{
-			user.lobbyID = nextLobbyID++;
-			bool hasTeammate = false;
-
-			for (const auto &teammateSteamID : user.teammates)
-			{
-				auto teammateIt = findUserBySteamID(teammateSteamID);
-				if (teammateIt != leetifyUsers.end())
-				{
-					hasTeammate = true;
-					if (teammateIt->lobbyID != 0 && teammateIt->lobbyID != user.lobbyID)
-					{
-						// Merge lobbies
-						int oldLobbyID = teammateIt->lobbyID;
-						for (auto &u : leetifyUsers)
-						{
-							if (u.lobbyID == oldLobbyID)
-							{
-								u.lobbyID = user.lobbyID;
-							}
-						}
-					}
-					else
-					{
-						teammateIt->lobbyID = user.lobbyID;
-					}
-				}
-			}
-
-			// Reset lobby ID if it's a single-player lobby
-			if (!hasTeammate)
-			{
-				user.lobbyID = 0;
-			}
-		}
-	}
-
 	// Sort users by lobby ID and then by Leetify rating
 	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser &a, const LeetifyUser &b) {
-		if (b.lobbyID != a.lobbyID)
-		{
-			return a.lobbyID > b.lobbyID;
-		}
-
 		if (b.recentGameRatings.leetifyRating != a.recentGameRatings.leetifyRating)
 		{
 			return a.recentGameRatings.leetifyRating > b.recentGameRatings.leetifyRating;
@@ -394,21 +346,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 
 			ImGui::TableHeadersRow();
 
-			int lastSeenLobbyID = -1;
-
 			for (const auto &user : leetifyUsers)
 			{
-				if (lastSeenLobbyID != user.lobbyID)
-				{
-					if (lastSeenLobbyID != -1)
-					{
-						ImGui::TableNextRow();
-						ImGui::TableNextColumn();
-						ImGui::Separator();
-					}
-					lastSeenLobbyID = user.lobbyID;
-				}
-
 				ImGui::TableNextRow();
 
 				// Get player name
