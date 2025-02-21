@@ -296,7 +296,7 @@ int main()
 		auto leetifyRating = user.recentGameRatings.leetifyRating * 100;
 
 		tblPlayers.add_row(
-		    {"\e]8;;https://leetify.com/app/profile/" + std::to_string(user.steamID.ConvertToUint64()) + "\e\\" + playerName + "\e]8;;\e\\",
+		    {"\x1B]8;;https://leetify.com/app/profile/" + std::to_string(user.steamID.ConvertToUint64()) + "\x1B\\\\" + playerName + "\x1B]8;;\x1B\\\\",
 		     (user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2),
 		     user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
 		     std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning),
