@@ -1,12 +1,14 @@
 add_rules("mode.debug", "mode.release")
-add_requires("nlohmann_json", "tabulate")
+add_requires("nlohmann_json")
 add_requires("libcurl")
+add_requires("imgui", {configs = {win32 = true, dx11 = true}})
 
 target("PlayerFetch")
 	set_kind("binary")
 	add_files("src/**.cpp")
 	add_headerfiles("src/**.h")
-	add_packages("nlohmann_json", "tabulate", "libcurl")
+	add_packages("nlohmann_json", "libcurl", "imgui")
+	add_ldflags("/subsystem:windows")
 
 	add_includedirs({
 		"vendor/steam/public",
@@ -14,7 +16,7 @@ target("PlayerFetch")
 
 	if is_plat("windows") then
 		add_files("icon.rc")
-		add_links("shell32")
+		add_links("shell32", "d3d11", "dxgi")
 	end
 
 	set_languages("cxx20")
