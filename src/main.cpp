@@ -383,12 +383,13 @@ int main()
 	processAndSortUsers(leetifyUsers);
 	renderTable(leetifyUsers);
 
+	CustomSteamAPIShutdown();
+
 	printf("\n\nCtrl+Click on player name to open on Leetify. Open links in browser (Y/n) ");
 
 	int input = getchar();
 	if (input == EOF || input == 'n' || input == 'N')
 	{
-		CustomSteamAPIShutdown();
 		return 0;
 	}
 
@@ -397,8 +398,6 @@ int main()
 		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
 		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 	}
-
-	CustomSteamAPIShutdown();
 
 	return 0;
 }
