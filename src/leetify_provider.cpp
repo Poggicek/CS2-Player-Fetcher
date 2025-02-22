@@ -52,6 +52,10 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 
 			handles[i] = std::move(handle);
 		}
+		else
+		{
+			printf("Failed to initialize CURL handle for %llu\n", i);
+		}
 	}
 
 	int stillRunning = 0;
