@@ -6,8 +6,6 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
-#include <mutex>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 #include <windows.h>
@@ -358,26 +356,14 @@ int main()
 		players.erase(players.begin() + 9, players.end());
 	}
 
-	std::vector<std::thread> threads;
-	std::vector<LeetifyUser> leetifyUsers;
-	std::mutex mtx;
-
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-
+	std::vector<CSteamID> playerSteamIDs;
 	for (const auto &player : players)
 	{
-		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
-			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
-			std::lock_guard<std::mutex> lock(mtx);
-			leetifyUsers.push_back(leetifyUser);
-		});
+		playerSteamIDs.push_back(player.playerSteamID);
 	}
 
-	for (auto &thread : threads)
-	{
-		thread.join();
-	}
-
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	std::vector<LeetifyUser> leetifyUsers = GetLeetifyUsers(playerSteamIDs);
 	curl_global_cleanup();
 
 	processAndSortUsers(leetifyUsers);

@@ -25,4 +25,4 @@ struct LeetifyUser
 	} recentGameRatings;
 };
 
-LeetifyUser GetLeetifyUser(CSteamID steamid);
+std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs);
