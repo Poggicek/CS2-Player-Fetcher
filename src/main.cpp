@@ -1,10 +1,12 @@
+#include "ftxui/dom/elements.hpp"
+#include "ftxui/dom/table.hpp"
+#include "ftxui/screen/screen.hpp"
 #include <algorithm>
 #include <curl/curl.h>
 #include <filesystem>
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <tabulate/table.hpp>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -12,8 +14,6 @@
 
 #include "leetify_provider.h"
 #include "main.h"
-
-using namespace tabulate;
 
 std::string GetSteamClientDllPath()
 {
@@ -96,6 +96,8 @@ int main()
 	SetConsoleOutputCP(65001);
 	SetConsoleCtrlHandler(consoleHandler, true);
 	CustomSteamAPIInit();
+
+	SetConsoleTitle("Leetify Stats");
 
 	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
 
@@ -232,46 +234,53 @@ int main()
 		return a.steamID > b.steamID;
 	});
 
+	using namespace ftxui;
+
 	int lastSeenLobbyID = -1;
-	Table tblPlayers;
 
-	tblPlayers.format().multi_byte_characters(true).locale("en_US.UTF-8");
+	// Build table data as a 2D vector of Elements (allowing per-cell color).
+	std::vector<std::vector<Element>> table_data;
 
-	tblPlayers.add_row({"Name", "Leetify", "Premier", "Aim", "Pos", "Util", "Wins", "Matches", "FACEIT", "Teammates"});
+	// Header row.
+	table_data.push_back({text("Name") | bold | color(Color::Yellow), text("Leetify") | bold | color(Color::Yellow),
+	                      text("Premier") | bold | color(Color::Yellow), text("Aim") | bold | color(Color::Yellow),
+	                      text("Pos") | bold | color(Color::Yellow), text("Util") | bold | color(Color::Yellow),
+	                      text("Wins") | bold | color(Color::Yellow), text("Matches") | bold | color(Color::Yellow),
+	                      text("FACEIT") | bold | color(Color::Yellow),
+	                      text("Teammates") | bold | color(Color::Yellow)});
 
+	// For each Leetify user, build a row with colored cells.
 	for (const auto &user : leetifyUsers)
 	{
 		if (lastSeenLobbyID != user.lobbyID)
 		{
 			if (lastSeenLobbyID != -1)
 			{
-				tblPlayers.add_row({""});
+				table_data.push_back({});
 			}
 
 			lastSeenLobbyID = user.lobbyID;
 		}
 
-		auto playerName = std::string(g_pSteamFriends->GetFriendPersonaName(user.steamID));
-		auto steamID = user.steamID.ConvertToUint64();
-		auto row = tblPlayers.size();
-		std::vector<std::string> teammates{};
-
-		if (playerName == "" || playerName == "[unknown]")
+		std::vector<Element> row;
+		std::string playerName = std::string(g_pSteamFriends->GetFriendPersonaName(user.steamID));
+		if (playerName.empty() || playerName == "[unknown]")
 		{
 			playerName = user.name;
 		}
 
+		// Build teammates string.
+		std::vector<std::string> teammates;
+		uint64_t steamID = user.steamID.ConvertToUint64();
 		for (const auto &otherUser : leetifyUsers)
 		{
 			if (otherUser.teammates.contains(steamID))
 			{
-				auto teammateName = std::string(g_pSteamFriends->GetFriendPersonaName(otherUser.steamID));
-
-				if (teammateName == "" || teammateName == "[unknown]")
+				std::string teammateName = std::string(g_pSteamFriends->GetFriendPersonaName(otherUser.steamID));
+				if (teammateName.empty() || teammateName == "[unknown]")
 				{
 					teammateName = otherUser.name;
 				}
-
 				teammates.push_back(teammateName);
 			}
 		}
@@ -286,106 +295,86 @@ int main()
 			teammatesStr << teammates[i];
 		}
 
+		std::string profileUrl = "https://leetify.com/app/profile/" + std::to_string(user.steamID.ConvertToUint64());
+
+		row.push_back(text(playerName) | hyperlink(profileUrl));
+
 		if (!user.success)
 		{
-			tblPlayers.add_row({playerName, "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "", teammatesStr.str()});
-			tblPlayers[row].format().font_color(Color::magenta).font_style({FontStyle::italic});
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("N/A") | bold | color(Color::Magenta));
+			row.push_back(text("") | bold | color(Color::Magenta));
+			row.push_back(text(teammatesStr.str()) | bold | color(Color::Magenta));
+			table_data.push_back(row);
 			continue;
 		}
 
-		auto leetifyRating = user.recentGameRatings.leetifyRating * 100;
+		float leetifyRating = user.recentGameRatings.leetifyRating * 100;
 
-		tblPlayers.add_row(
-		    {playerName, (user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2),
-		     user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel),
-		     std::to_string((int)user.recentGameRatings.aim), std::to_string((int)user.recentGameRatings.positioning),
-		     std::to_string((int)user.recentGameRatings.utility), std::to_string((int)user.winRate) + "%",
-		     std::to_string(user.matches),
-		     (user.faceitElo > 0 ? "[" + std::to_string(user.faceitElo) + "] " : "") + user.faceitNickname,
-		     teammatesStr.str()});
+		Color leetifyColor = leetifyRating >= 5    ? Color::Yellow
+		                     : leetifyRating >= 1  ? Color::Green
+		                     : leetifyRating <= -1 ? Color::Red
+		                                           : Color::White;
 
-		auto rowFormat = tblPlayers[row];
+		Color premierColor = user.skillLevel >= 30000   ? Color::Yellow
+		                     : user.skillLevel >= 25000 ? Color::Red
+		                     : user.skillLevel >= 20000 ? Color::Magenta
+		                     : user.skillLevel >= 15000 ? Color::Blue
+		                     : user.skillLevel >= 10000 ? Color::Cyan
+		                                                : Color::White;
 
-		if (leetifyRating >= 5)
-		{
-			rowFormat[1].format().font_color(Color::yellow);
-		}
-		else if (leetifyRating >= 1)
-		{
-			rowFormat[1].format().font_color(Color::green);
-		}
-		else if (leetifyRating <= -1)
-		{
-			rowFormat[1].format().font_color(Color::red);
-		}
+		Color aimColor = user.recentGameRatings.aim >= 85   ? Color::Red
+		                 : user.recentGameRatings.aim >= 60 ? Color::Green
+		                                                    : Color::White;
 
-		if (user.skillLevel >= 30000)
-		{
-			rowFormat[2].format().font_color(Color::yellow);
-		}
-		else if (user.skillLevel >= 25000)
-		{
-			rowFormat[2].format().font_color(Color::red);
-		}
-		else if (user.skillLevel >= 20000)
-		{
-			rowFormat[2].format().font_color(Color::magenta);
-		}
-		else if (user.skillLevel >= 15000)
-		{
-			rowFormat[2].format().font_color(Color::blue);
-		}
-		else if (user.skillLevel >= 10000)
-		{
-			rowFormat[2].format().font_color(Color::cyan);
-		}
+		Color posColor = user.recentGameRatings.positioning >= 60 ? Color::Green : Color::White;
+		Color utilColor = user.recentGameRatings.utility >= 60 ? Color::Green : Color::White;
+		Color winsColor = user.winRate >= 55 ? Color::Green : user.winRate <= 45 ? Color::Red : Color::White;
 
-		if (user.recentGameRatings.aim >= 85)
-		{
-			rowFormat[3].format().font_color(Color::red);
-		}
-		else if (user.recentGameRatings.aim >= 60)
-		{
-			rowFormat[3].format().font_color(Color::green);
-		}
+		Color faceitColor = user.faceitElo >= 2001   ? Color::Red
+		                    : user.faceitElo >= 1701 ? Color::Magenta
+		                                             : Color::White;
 
-		if (user.recentGameRatings.positioning >= 60)
-		{
-			rowFormat[4].format().font_color(Color::green);
-		}
+		row.push_back(text((user.recentGameRatings.leetifyRating >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2)) |
+		              color(leetifyColor));
+		row.push_back(text(user.skillLevel <= 0 ? "N/A" : std::to_string(user.skillLevel)) | color(premierColor));
+		row.push_back(text(std::to_string((int)user.recentGameRatings.aim)) | color(aimColor));
+		row.push_back(text(std::to_string((int)user.recentGameRatings.positioning)) | color(posColor));
+		row.push_back(text(std::to_string((int)user.recentGameRatings.utility)) | color(utilColor));
+		row.push_back(text(std::to_string((int)user.winRate) + "%") | color(winsColor));
+		row.push_back(text(std::to_string(user.matches)));
+		row.push_back(
+		    text((user.faceitElo > 0 ? ("[" + std::to_string(user.faceitElo) + "] ") : "") + user.faceitNickname) |
+		    color(faceitColor));
+		row.push_back(text(teammatesStr.str()));
 
-		if (user.recentGameRatings.utility >= 60)
-		{
-			rowFormat[5].format().font_color(Color::green);
-		}
-
-		if (user.winRate >= 55)
-		{
-			rowFormat[6].format().font_color(Color::green);
-		}
-		else if (user.winRate <= 45)
-		{
-			rowFormat[6].format().font_color(Color::red);
-		}
-
-		if (user.faceitElo >= 2001)
-		{
-			rowFormat[8].format().font_color(Color::red);
-		}
-		else if (user.faceitElo >= 1701)
-		{
-			rowFormat[8].format().font_color(Color::magenta);
-		}
+		table_data.push_back(row);
 	}
 
-	for (size_t i = 0; i < tblPlayers[0].size(); ++i)
-	{
-		tblPlayers[0][i].format().font_color(Color::yellow).font_style({FontStyle::bold});
-	}
+	auto table = Table(table_data);
 
-	std::cout << tblPlayers << std::endl;
+	table.SelectAll().SeparatorVertical(LIGHT);
+	table.SelectAll().Border(HEAVY);
 
-	printf("Open links in browser (Y/n) ");
+	table.SelectColumn(1).DecorateCells(align_right);
+	table.SelectColumn(2).DecorateCells(align_right);
+	table.SelectColumn(3).DecorateCells(align_right);
+	table.SelectColumn(4).DecorateCells(align_right);
+	table.SelectColumn(5).DecorateCells(align_right);
+	table.SelectColumn(6).DecorateCells(align_right);
+	table.SelectColumn(7).DecorateCells(align_right);
+
+	auto document = table.Render();
+	auto screen = Screen::Create(Dimension::Fit(document));
+	Render(screen, document);
+	screen.Print();
+
+	printf("\n\nCtrl+Click on player name to open on Leetify. Open links in browser (Y/n) ");
 
 	int input = getchar();
 	if (input == EOF || input == 'n' || input == 'N')

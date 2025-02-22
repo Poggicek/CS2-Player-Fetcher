@@ -1,12 +1,13 @@
 add_rules("mode.debug", "mode.release")
-add_requires("nlohmann_json", "tabulate")
+add_requires("nlohmann_json")
 add_requires("libcurl")
+add_requires("ftxui")
 
 target("PlayerFetch")
 	set_kind("binary")
 	add_files("src/**.cpp")
 	add_headerfiles("src/**.h")
-	add_packages("nlohmann_json", "tabulate", "libcurl")
+	add_packages("nlohmann_json", "ftxui", "libcurl")
 
 	add_includedirs({
 		"vendor/steam/public",
