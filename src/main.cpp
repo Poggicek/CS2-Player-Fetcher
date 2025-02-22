@@ -91,85 +91,8 @@ std::string roundTo(float value, int decimalPlaces)
 	return stream.str();
 }
 
-int main()
+void processAndSortUsers(std::vector<LeetifyUser> &leetifyUsers)
 {
-	SetConsoleOutputCP(65001);
-	SetConsoleCtrlHandler(consoleHandler, true);
-	CustomSteamAPIInit();
-
-	SetConsoleTitle("Leetify Stats");
-
-	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
-
-	std::vector<Player> players;
-
-	for (int i = 0; i < iPlayers; ++i)
-	{
-		CSteamID playerSteamID = g_pSteamFriends->GetCoplayFriend(i);
-		static auto mySteamID = g_pSteamUser->GetSteamID();
-
-		if (playerSteamID == mySteamID)
-		{
-			continue;
-		}
-
-		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
-
-		if (app != 730)
-		{
-			continue;
-		}
-
-		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
-
-		players.emplace_back(playerSteamID, iTimeStamp);
-	}
-
-	std::sort(players.begin(), players.end(), [](const Player &a, const Player &b) {
-		if (a.time == b.time)
-		{
-			return a.playerSteamID > b.playerSteamID;
-		}
-
-		return a.time > b.time;
-	});
-
-	int iHighestTimeStamp;
-
-	if (players.size() > 0)
-	{
-		iHighestTimeStamp = players[(std::min)(5, static_cast<int>(players.size()) - 1)].time;
-	}
-
-	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
-
-	if (players.size() > 9)
-	{
-		players.erase(players.begin() + 9, players.end());
-	}
-
-	std::vector<std::thread> threads;
-	std::vector<LeetifyUser> leetifyUsers;
-	std::mutex mtx;
-
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-
-	for (const auto &player : players)
-	{
-		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
-			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
-			std::lock_guard<std::mutex> lock(mtx);
-			leetifyUsers.push_back(leetifyUser);
-		});
-	}
-
-	for (auto &thread : threads)
-	{
-		thread.join();
-	}
-
-	curl_global_cleanup();
-
 	int nextLobbyID = 1;
 
 	// Helper function to find a user by Steam ID
@@ -233,7 +156,10 @@ int main()
 
 		return a.steamID > b.steamID;
 	});
+}
 
+void renderTable(std::vector<LeetifyUser> leetifyUsers)
+{
 	using namespace ftxui;
 
 	int lastSeenLobbyID = -1;
@@ -373,6 +299,89 @@ int main()
 	auto screen = Screen::Create(Dimension::Fit(document));
 	Render(screen, document);
 	screen.Print();
+}
+
+int main()
+{
+	SetConsoleOutputCP(65001);
+	SetConsoleCtrlHandler(consoleHandler, true);
+	CustomSteamAPIInit();
+
+	SetConsoleTitle("Leetify Stats");
+
+	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
+
+	std::vector<Player> players;
+
+	for (int i = 0; i < iPlayers; ++i)
+	{
+		CSteamID playerSteamID = g_pSteamFriends->GetCoplayFriend(i);
+		static auto mySteamID = g_pSteamUser->GetSteamID();
+
+		if (playerSteamID == mySteamID)
+		{
+			continue;
+		}
+
+		AppId_t app = g_pSteamFriends->GetFriendCoplayGame(playerSteamID);
+
+		if (app != 730)
+		{
+			continue;
+		}
+
+		int iTimeStamp = g_pSteamFriends->GetFriendCoplayTime(playerSteamID);
+
+		players.emplace_back(playerSteamID, iTimeStamp);
+	}
+
+	std::sort(players.begin(), players.end(), [](const Player &a, const Player &b) {
+		if (a.time == b.time)
+		{
+			return a.playerSteamID > b.playerSteamID;
+		}
+
+		return a.time > b.time;
+	});
+
+	int iHighestTimeStamp;
+
+	if (players.size() > 0)
+	{
+		iHighestTimeStamp = players[(std::min)(5, static_cast<int>(players.size()) - 1)].time;
+	}
+
+	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
+
+	if (players.size() > 9)
+	{
+		players.erase(players.begin() + 9, players.end());
+	}
+
+	std::vector<std::thread> threads;
+	std::vector<LeetifyUser> leetifyUsers;
+	std::mutex mtx;
+
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+
+	for (const auto &player : players)
+	{
+		threads.emplace_back([&player, &mtx, &leetifyUsers]() {
+			auto leetifyUser = GetLeetifyUser(player.playerSteamID.ConvertToUint64());
+			std::lock_guard<std::mutex> lock(mtx);
+			leetifyUsers.push_back(leetifyUser);
+		});
+	}
+
+	for (auto &thread : threads)
+	{
+		thread.join();
+	}
+
+	curl_global_cleanup();
+
+	processAndSortUsers(leetifyUsers);
+	renderTable(leetifyUsers);
 
 	printf("\n\nCtrl+Click on player name to open on Leetify. Open links in browser (Y/n) ");
 
