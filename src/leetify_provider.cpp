@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <curl/curl.h>
-#include <format>
 #include <nlohmann/json.hpp>
 
 #include "leetify_provider.h"
@@ -13,15 +11,15 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::stri
 
 struct CurlHandle
 {
+	LeetifyUser *user;
 	CURL *handle;
 	std::string response;
-	CSteamID steamID;
 };
 
 std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 {
 	std::vector<LeetifyUser> users(steamIDs.size());
-	std::vector<std::unique_ptr<CurlHandle>> handles;
+	std::vector<std::unique_ptr<CurlHandle>> handles(steamIDs.size());
 
 	CURLM *multiHandle = curl_multi_init();
 	if (!multiHandle)
@@ -33,8 +31,8 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 	for (size_t i = 0; i < steamIDs.size(); i++)
 	{
 		auto handle = std::make_unique<CurlHandle>();
+		handle->user = &users[i];
 		handle->handle = curl_easy_init();
-		handle->steamID = steamIDs[i];
 
 		users[i].steamID = steamIDs[i];
 
@@ -51,7 +49,8 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 			curl_easy_setopt(handle->handle, CURLOPT_PRIVATE, handle.get());
 
 			curl_multi_add_handle(multiHandle, handle->handle);
-			handles.push_back(std::move(handle));
+
+			handles[i] = std::move(handle);
 		}
 	}
 
@@ -90,14 +89,13 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 			long response_code;
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
 
-			auto user = std::find_if(users.begin(), users.end(),
-			                         [&handle](const LeetifyUser &user) { return user.steamID == handle->steamID; });
-
-			if (user == users.end() || response_code != 200)
+			if (response_code != 200)
 			{
 				printf("failed to perform leetify request: HTTP %d\n", response_code);
 				continue;
 			}
+
+			auto user = handle->user;
 
 			try
 			{
@@ -178,7 +176,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 					{
 						auto teammateSteamID = std::stoull(teammateGame);
 
-						if (teammateSteamID != handle->steamID.ConvertToUint64())
+						if (teammateSteamID != user->steamID.ConvertToUint64())
 						{
 							user->teammates.insert(teammateSteamID);
 						}
@@ -201,7 +199,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 			}
 			catch (const std::exception &e)
 			{
-				printf("fail: %llu", handle->steamID.ConvertToUint64());
+				printf("fail: %llu ", user->steamID.ConvertToUint64());
 				printf("error %s\n", e.what());
 			}
 

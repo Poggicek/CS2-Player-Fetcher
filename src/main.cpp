@@ -4,10 +4,6 @@
 #include <algorithm>
 #include <curl/curl.h>
 #include <filesystem>
-#include <iostream>
-#include <map>
-#include <unordered_map>
-#include <vector>
 #include <windows.h>
 
 #include "leetify_provider.h"
