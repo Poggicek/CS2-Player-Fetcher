@@ -136,7 +136,7 @@ int main()
 
 	if (players.size() > 0)
 	{
-		iHighestTimeStamp = players[std::min(5, static_cast<int>(players.size()) - 1)].time;
+		iHighestTimeStamp = players[(std::min)(5, static_cast<int>(players.size()) - 1)].time;
 	}
 
 	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
