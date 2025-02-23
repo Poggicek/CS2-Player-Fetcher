@@ -166,18 +166,14 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 	                      text("Premier") | bold | color(Color::Yellow), text("Aim") | bold | color(Color::Yellow),
 	                      text("Pos") | bold | color(Color::Yellow), text("Util") | bold | color(Color::Yellow),
 	                      text("Wins") | bold | color(Color::Yellow), text("Matches") | bold | color(Color::Yellow),
-	                      text("FACEIT") | bold | color(Color::Yellow),
-	                      text("Teammates") | bold | color(Color::Yellow)});
+	                      text("FACEIT") | bold | color(Color::Yellow)});
 
 	// For each Leetify user, build a row with colored cells.
 	for (const auto &user : leetifyUsers)
 	{
 		if (lastSeenLobbyID != user.lobbyID)
 		{
-			if (lastSeenLobbyID != -1)
-			{
-				table_data.push_back({});
-			}
+			table_data.push_back({text(user.lobbyID == 0 ? "Solos" : "Lobby") | bold | color(Color::Cyan)});
 
 			lastSeenLobbyID = user.lobbyID;
 		}
@@ -187,32 +183,6 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		if (playerName.empty() || playerName == "[unknown]")
 		{
 			playerName = user.name;
-		}
-
-		// Build teammates string.
-		std::vector<std::string> teammates;
-		uint64_t steamID = user.steamID.ConvertToUint64();
-		for (const auto &otherUser : leetifyUsers)
-		{
-			if (otherUser.teammates.contains(steamID))
-			{
-				std::string teammateName = std::string(g_pSteamFriends->GetFriendPersonaName(otherUser.steamID));
-				if (teammateName.empty() || teammateName == "[unknown]")
-				{
-					teammateName = otherUser.name;
-				}
-				teammates.push_back(teammateName);
-			}
-		}
-
-		std::ostringstream teammatesStr;
-		for (size_t i = 0; i < teammates.size(); ++i)
-		{
-			if (i != 0)
-			{
-				teammatesStr << ", ";
-			}
-			teammatesStr << teammates[i];
 		}
 
 		std::string profileUrl = "https://leetify.com/app/profile/" + std::to_string(user.steamID.ConvertToUint64());
@@ -229,7 +199,6 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 			row.push_back(text("N/A") | bold | color(Color::Magenta));
 			row.push_back(text("N/A") | bold | color(Color::Magenta));
 			row.push_back(text("") | bold | color(Color::Magenta));
-			row.push_back(text(teammatesStr.str()) | bold | color(Color::Magenta));
 			table_data.push_back(row);
 			continue;
 		}
@@ -271,7 +240,6 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		row.push_back(
 		    text((user.faceitElo > 0 ? ("[" + std::to_string(user.faceitElo) + "] ") : "") + user.faceitNickname) |
 		    color(faceitColor));
-		row.push_back(text(teammatesStr.str()));
 
 		table_data.push_back(row);
 	}
@@ -299,9 +267,9 @@ int main()
 {
 	SetConsoleOutputCP(65001);
 	SetConsoleCtrlHandler(consoleHandler, true);
-	CustomSteamAPIInit();
-
 	SetConsoleTitle("Leetify Stats");
+
+	CustomSteamAPIInit();
 
 	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
 
