@@ -156,6 +156,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 {
 	using namespace ftxui;
 
+	auto now = std::chrono::system_clock::now();
 	int lastSeenLobbyID = -1;
 
 	// Build table data as a 2D vector of Elements (allowing per-cell color).
@@ -166,7 +167,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 	                      text("Premier") | bold | color(Color::Yellow), text("Aim") | bold | color(Color::Yellow),
 	                      text("Pos") | bold | color(Color::Yellow), text("Util") | bold | color(Color::Yellow),
 	                      text("Wins") | bold | color(Color::Yellow), text("Matches") | bold | color(Color::Yellow),
-	                      text("FACEIT") | bold | color(Color::Yellow)});
+	                      text("FACEIT") | bold | color(Color::Yellow), text("Time") | bold | color(Color::Yellow)});
 
 	// For each Leetify user, build a row with colored cells.
 	for (const auto &user : leetifyUsers)
@@ -185,6 +186,10 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 			playerName = user.name;
 		}
 
+		auto playedAgoMinutes = std::chrono::duration_cast<std::chrono::minutes>(
+		                            now - std::chrono::system_clock::from_time_t(user.playedTime))
+		                            .count();
+
 		std::string profileUrl = "https://leetify.com/app/profile/" + std::to_string(user.steamID.ConvertToUint64());
 
 		row.push_back(text(playerName) | hyperlink(profileUrl));
@@ -198,7 +203,8 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 			row.push_back(text("N/A") | bold | color(Color::Magenta));
 			row.push_back(text("N/A") | bold | color(Color::Magenta));
 			row.push_back(text("N/A") | bold | color(Color::Magenta));
-			row.push_back(text("") | bold | color(Color::Magenta));
+			row.push_back(text(""));
+			row.push_back(text(std::to_string(playedAgoMinutes) + "m ago"));
 			table_data.push_back(row);
 			continue;
 		}
@@ -240,6 +246,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		row.push_back(
 		    text((user.faceitElo > 0 ? ("[" + std::to_string(user.faceitElo) + "] ") : "") + user.faceitNickname) |
 		    color(faceitColor));
+		row.push_back(text(std::to_string(playedAgoMinutes) + "m ago"));
 
 		table_data.push_back(row);
 	}
@@ -300,7 +307,7 @@ int main()
 	std::sort(players.begin(), players.end(), [](const Player &a, const Player &b) {
 		if (a.time == b.time)
 		{
-			return a.playerSteamID > b.playerSteamID;
+			return a.steamID > b.steamID;
 		}
 
 		return a.time > b.time;
@@ -320,14 +327,8 @@ int main()
 		players.erase(players.begin() + 9, players.end());
 	}
 
-	std::vector<CSteamID> playerSteamIDs;
-	for (const auto &player : players)
-	{
-		playerSteamIDs.push_back(player.playerSteamID);
-	}
-
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	std::vector<LeetifyUser> leetifyUsers = GetLeetifyUsers(playerSteamIDs);
+	std::vector<LeetifyUser> leetifyUsers = GetLeetifyUsers(players);
 	curl_global_cleanup();
 
 	processAndSortUsers(leetifyUsers);
@@ -345,7 +346,7 @@ int main()
 
 	for (const auto &player : players)
 	{
-		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.playerSteamID.ConvertToUint64());
+		std::string url = "https://leetify.com/app/profile/" + std::to_string(player.steamID.ConvertToUint64());
 		ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 	}
 

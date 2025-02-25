@@ -16,10 +16,10 @@ struct CurlHandle
 	std::string response;
 };
 
-std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
+std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 {
-	std::vector<LeetifyUser> users(steamIDs.size());
-	std::vector<std::unique_ptr<CurlHandle>> handles(steamIDs.size());
+	std::vector<LeetifyUser> users(players.size());
+	std::vector<std::unique_ptr<CurlHandle>> handles(players.size());
 
 	CURLM *multiHandle = curl_multi_init();
 	if (!multiHandle)
@@ -28,17 +28,19 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 		return users;
 	}
 
-	for (size_t i = 0; i < steamIDs.size(); i++)
+	for (size_t i = 0; i < players.size(); i++)
 	{
 		auto handle = std::make_unique<CurlHandle>();
 		handle->user = &users[i];
 		handle->handle = curl_easy_init();
 
-		users[i].steamID = steamIDs[i];
+		auto player = players[i];
+		users[i].steamID = player.steamID;
+		users[i].playedTime = player.time;
 
 		if (handle->handle)
 		{
-			auto url = "https://api.leetify.com/api/profile/" + std::to_string(steamIDs[i].ConvertToUint64());
+			auto url = "https://api.leetify.com/api/profile/" + std::to_string(player.steamID.ConvertToUint64());
 
 			curl_easy_setopt(handle->handle, CURLOPT_USERAGENT,
 			                 "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
@@ -58,6 +60,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 		}
 	}
 
+	auto now = std::chrono::system_clock::now();
 	int stillRunning = 0;
 	do
 	{
@@ -118,7 +121,6 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs)
 
 				auto games = json["games"].get<std::vector<nlohmann::json>>();
 
-				auto now = std::chrono::system_clock::now();
 				auto twoMonthsAgo = now - std::chrono::hours(24 * 60);
 
 				auto latestFaceitGame =

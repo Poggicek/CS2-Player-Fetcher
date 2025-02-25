@@ -3,6 +3,16 @@
 #include <set>
 #include <steam_api.h>
 
+struct Player
+{
+	CSteamID steamID;
+	int time;
+
+	Player(CSteamID playerSteamID, int iTimeStamp) : steamID(playerSteamID), time(iTimeStamp)
+	{
+	}
+};
+
 struct LeetifyUser
 {
 	bool success = false;
@@ -11,6 +21,7 @@ struct LeetifyUser
 	int matches = -1;
 	int lobbyID = 0;
 	int faceitElo = -1;
+	int playedTime = 0;
 	CSteamID steamID;
 	std::set<uint64> teammates{};
 	std::string faceitNickname;
@@ -25,4 +36,4 @@ struct LeetifyUser
 	} recentGameRatings;
 };
 
-std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<CSteamID> &steamIDs);
+std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &steamIDs);
