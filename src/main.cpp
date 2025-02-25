@@ -318,6 +318,7 @@ int main()
 	if (players.size() > 0)
 	{
 		iHighestTimeStamp = players[(std::min)(5, static_cast<int>(players.size()) - 1)].time;
+		iHighestTimeStamp -= 300; // allow slack of 5 minutes because Steam is a bit inconsistent
 	}
 
 	std::erase_if(players, [iHighestTimeStamp](const Player &player) { return iHighestTimeStamp > player.time; });
