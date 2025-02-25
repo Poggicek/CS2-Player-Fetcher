@@ -243,9 +243,18 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		row.push_back(text(std::to_string((int)user.recentGameRatings.utility)) | color(utilColor));
 		row.push_back(text(std::to_string((int)user.winRate) + "%") | color(winsColor));
 		row.push_back(text(std::to_string(user.matches)));
-		row.push_back(
-		    text((user.faceitElo > 0 ? ("[" + std::to_string(user.faceitElo) + "] ") : "") + user.faceitNickname) |
-		    color(faceitColor));
+
+		if (user.faceitNickname.length() > 0)
+		{
+			row.push_back(
+			    text((user.faceitElo > 0 ? ("[" + std::to_string(user.faceitElo) + "] ") : "") + user.faceitNickname) |
+			    color(faceitColor) | hyperlink("https://www.faceit.com/en/players/" + user.faceitNickname));
+		}
+		else
+		{
+			row.push_back(text(""));
+		}
+
 		row.push_back(text(std::to_string(playedAgoMinutes) + "m ago"));
 
 		table_data.push_back(row);
