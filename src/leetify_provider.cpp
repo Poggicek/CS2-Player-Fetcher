@@ -40,7 +40,8 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 		if (handle->handle)
 		{
-			auto url = "https://api.leetify.com/api/profile/" + std::to_string(player.steamID.ConvertToUint64());
+			auto url =
+			    "https://api.cs-prod.leetify.com/api/profile/id/" + std::to_string(player.steamID.ConvertToUint64());
 
 			curl_easy_setopt(handle->handle, CURLOPT_USERAGENT,
 			                 "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
