@@ -7,8 +7,7 @@ It uses the Steam API and Leetify API to gather data and present it in a neatly 
 
 - Fetches recent co-players from Steam
 - Retrieves player statistics from Leetify
-- Displays information such as Leetify rating, Premier rank, aim/positioning/utility scores, win rate, and more
-- Groups players by lobby
+- Displays information such as Leetify rating, Premier rank, aim/positioning/utility scores, time to damage, crosshair placement, headshot percentage, win rate, matches, and bans
 - Provides an option to open Leetify profile links for each player
 
 This project is not affiliated with or endorsed by Valve or Leetify. Use at your own risk.
