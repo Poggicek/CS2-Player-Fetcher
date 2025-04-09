@@ -40,8 +40,8 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 		if (handle->handle)
 		{
-			auto url =
-			    "https://api.cs-prod.leetify.com/api/profile/id/" + std::to_string(player.steamID.ConvertToUint64());
+			auto url = "https://api-public.cs-prod.leetify.com/v2/profiles/" +
+			           std::to_string(player.steamID.ConvertToUint64());
 
 			curl_easy_setopt(handle->handle, CURLOPT_USERAGENT,
 			                 "CS2 Player Fetcher (+https://github.com/Poggicek/CS2-Player-Fetcher)");
@@ -109,97 +109,78 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 			{
 				auto json = nlohmann::json::parse(handle->response);
 
-				user->name = json["meta"]["name"].is_null() ? "" : json["meta"]["name"].get<std::string>();
-				user->recentGameRatings.aim = json["recentGameRatings"]["aim"].get<float>();
-				user->recentGameRatings.positioning = json["recentGameRatings"]["positioning"].get<float>();
-				user->recentGameRatings.utility = json["recentGameRatings"]["utility"].get<float>();
-				user->recentGameRatings.leetifyRating = json["recentGameRatings"]["leetify"].get<float>();
+				user->name = json["name"].is_null() ? "" : json["name"].get<std::string>();
+				user->winRate = json["winrate"].get<float>() * 100.0f;
+				user->matchmakingWins = json["matchmaking_wins"].get<int>();
 
-				if (json["meta"].contains("faceitNickname"))
+				if (json.contains("rating"))
 				{
-					user->faceitNickname = json["meta"]["faceitNickname"].get<std::string>();
+					auto &rating = json["rating"];
+					user->rating.aim = rating["aim"].get<float>();
+					user->rating.positioning = rating["positioning"].get<float>();
+					user->rating.utility = rating["utility"].get<float>();
+					user->rating.clutch = rating["clutch"].get<float>();
+					user->rating.opening = rating["opening"].get<float>();
+					user->rating.ct_leetify = rating["ct_leetify"].get<float>();
+					user->rating.t_leetify = rating["t_leetify"].get<float>();
 				}
 
-				auto games = json["games"].get<std::vector<nlohmann::json>>();
-
-				auto twoMonthsAgo = now - std::chrono::hours(24 * 60);
-
-				auto latestFaceitGame =
-				    std::find_if(games.begin(), games.end(), [&twoMonthsAgo](const nlohmann::json &game) {
-					    if (game["dataSource"].get<std::string>() != "faceit")
-					    {
-						    return false;
-					    }
-
-					    auto gameFinishedAt = game["gameFinishedAt"].get<std::string>();
-					    std::tm tm = {};
-					    std::istringstream ss(gameFinishedAt);
-					    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-					    auto gameTime = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-
-					    return gameTime > twoMonthsAgo;
-				    });
-
-				if (latestFaceitGame != games.end() && !latestFaceitGame->at("elo").is_null())
+				if (json.contains("ranks"))
 				{
-					user->faceitElo = latestFaceitGame->value("elo", -1);
-				}
-
-				user->matches = games.size();
-
-				auto mmGames = std::find_if(games.begin(), games.end(), [&](const nlohmann::json &game) {
-					return game["dataSource"].get<std::string>() == "matchmaking" && !game["rankType"].is_null() &&
-					       game.value("rankType", -1) == 11;
-				});
-
-				if (mmGames != games.end())
-				{
-					user->skillLevel = mmGames[0].at("skillLevel").get<int>();
-				}
-
-				if (games.size() > 30)
-				{
-					games.erase(games.begin() + 30, games.end());
-				}
-
-				int wins = 0;
-				int ties = 0;
-
-				for (const auto &game : games)
-				{
-					auto matchResult = game["matchResult"].get<std::string>();
-					if (matchResult == "win")
+					if (!json["ranks"]["leetify"].is_null())
 					{
-						wins++;
-					}
-					else if (matchResult == "tie")
-					{
-						ties++;
+						user->ranks.leetify = json["ranks"]["leetify"].get<float>();
 					}
 
-					auto teammatesGame = game["ownTeamSteam64Ids"].get<std::vector<std::string>>();
-
-					for (const auto &teammateGame : teammatesGame)
+					if (!json["ranks"]["premier"].is_null())
 					{
-						auto teammateSteamID = std::stoull(teammateGame);
+						user->ranks.premier = json["ranks"]["premier"].get<int>();
+					}
 
-						if (teammateSteamID != user->steamID.ConvertToUint64())
-						{
-							user->teammates.insert(teammateSteamID);
-						}
+					if (!json["ranks"]["faceit"].is_null())
+					{
+						user->ranks.faceit = json["ranks"]["faceit"].get<int>();
 					}
 				}
 
-				user->winRate = (float)wins / (games.size() - ties) * 100.0f;
-
-				if (json["teammates"].is_array())
+				if (json.contains("skills"))
 				{
-					auto teammates = json["teammates"].get<std::vector<nlohmann::json>>();
+					auto &skills = json["skills"];
+					user->skills.accuracy_enemy_spotted = skills["accuracy_enemy_spotted"].get<float>();
+					user->skills.accuracy_head = skills["accuracy_head"].get<float>();
+					user->skills.counter_strafing_good_shots_ratio =
+					    skills["counter_strafing_good_shots_ratio"].get<float>();
+					user->skills.ct_opening_aggression_success_rate =
+					    skills["ct_opening_aggression_success_rate"].get<float>();
+					user->skills.ct_opening_duel_success_percentage =
+					    skills["ct_opening_duel_success_percentage"].get<float>();
+					user->skills.flashbang_hit_foe_avg_duration = skills["flashbang_hit_foe_avg_duration"].get<float>();
+					user->skills.flashbang_hit_foe_per_flashbang =
+					    skills["flashbang_hit_foe_per_flashbang"].get<float>();
+					user->skills.flashbang_hit_friend_per_flashbang =
+					    skills["flashbang_hit_friend_per_flashbang"].get<float>();
+					user->skills.flashbang_leading_to_kill = skills["flashbang_leading_to_kill"].get<float>();
+					user->skills.flashbang_thrown = skills["flashbang_thrown"].get<float>();
+					user->skills.he_foes_damage_avg = skills["he_foes_damage_avg"].get<float>();
+					user->skills.he_friends_damage_avg = skills["he_friends_damage_avg"].get<float>();
+					user->skills.preaim = skills["preaim"].get<float>();
+					user->skills.reaction_time = skills["reaction_time"].get<float>();
+					user->skills.spray_accuracy = skills["spray_accuracy"].get<float>();
+					user->skills.t_opening_aggression_success_rate =
+					    skills["t_opening_aggression_success_rate"].get<float>();
+					user->skills.t_opening_duel_success_percentage =
+					    skills["t_opening_duel_success_percentage"].get<float>();
+					user->skills.traded_deaths_success_percentage =
+					    skills["traded_deaths_success_percentage"].get<float>();
+					user->skills.trade_kill_opportunities_per_round =
+					    skills["trade_kill_opportunities_per_round"].get<float>();
+					user->skills.trade_kills_success_percentage = skills["trade_kills_success_percentage"].get<float>();
+					user->skills.utility_on_death_avg = skills["utility_on_death_avg"].get<float>();
+				}
 
-					for (const auto &teammate : teammates)
-					{
-						user->teammates.insert(std::stoull(teammate["steam64Id"].get<std::string>()));
-					}
+				if (json.contains("bans") && json["bans"].is_array())
+				{
+					user->bans = json["bans"].get<std::vector<std::string>>();
 				}
 
 				user->success = true;
