@@ -123,17 +123,18 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 
 		if (!user.success)
 		{
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
-			row.push_back(text("N/A") | color(Color::Magenta));
+			row.push_back(text(" N/A ") | color(Color::Magenta));
 			row.push_back(text(""));
-			row.push_back(text(std::to_string(playedAgoMinutes) + "m ago"));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(""));
+			row.push_back(text(" " + std::to_string(playedAgoMinutes) + "m ago "));
 			row.push_back(text(""));
 			table_data.push_back(row);
 			continue;
@@ -167,9 +168,8 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		                      : user.skills.reaction_time > 650 ? Color::Yellow
 		                                                        : Color::White;
 
-		Color preaimColor = user.skills.preaim < 5    ? Color::Green
-		                    : user.skills.preaim < 10 ? Color::Yellow
-		                    : user.skills.preaim > 15 ? Color::Red
+		Color preaimColor = user.skills.preaim < 3    ? Color::Red
+		                    : user.skills.preaim < 10 ? Color::Green
 		                                              : Color::White;
 
 		Color hsColor = user.skills.accuracy_head >= 20 ? Color::Green : Color::White;
