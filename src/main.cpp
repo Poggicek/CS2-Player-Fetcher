@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <curl/curl.h>
 #include <filesystem>
+#include <map>
+#include <queue>
 #include <windows.h>
 
 #include "leetify_provider.h"
@@ -94,42 +96,86 @@ void processAndSortUsers(std::vector<LeetifyUser> &leetifyUsers)
 		                    [steamID](const LeetifyUser &u) { return u.steamID == steamID; });
 	};
 
+	// First, create a bidirectional relationship map
+	// If A has B as a teammate, both should be in the same lobby
+	std::map<CSteamID, std::set<CSteamID>> teammateConnections;
+
+	// Build connections in both directions
+	for (const auto &user : leetifyUsers)
+	{
+		// Add connections from this user's teammates list
+		for (const auto &teammateInfo : user.recentTeammates)
+		{
+			// Only add connections for teammates that exist in our list
+			if (findUserBySteamID(teammateInfo.steamID) != leetifyUsers.end())
+			{
+				teammateConnections[user.steamID].insert(teammateInfo.steamID);
+				teammateConnections[teammateInfo.steamID].insert(user.steamID);
+			}
+		}
+	}
+
+	// Now assign lobby IDs using the bidirectional connections
+	std::map<CSteamID, int> steamIDToLobbyID;
+
 	for (auto &user : leetifyUsers)
 	{
-		if (user.lobbyID == 0)
-		{
-			user.lobbyID = nextLobbyID++;
-			bool hasTeammate = false;
+		auto userID = user.steamID;
 
-			for (const auto &teammateInfo : user.recentTeammates)
+		// If this user already has a lobby ID, skip
+		if (steamIDToLobbyID.find(userID) != steamIDToLobbyID.end())
+		{
+			user.lobbyID = steamIDToLobbyID[userID];
+			continue;
+		}
+
+		// No lobby ID yet, check if this user has any teammates
+		if (teammateConnections[userID].empty())
+		{
+			// No teammates, assign single-player lobby (0)
+			user.lobbyID = 0;
+			steamIDToLobbyID[userID] = 0;
+			continue;
+		}
+
+		// Create a new lobby with teammates
+		auto lobbyID = nextLobbyID++;
+		user.lobbyID = lobbyID;
+		steamIDToLobbyID[userID] = lobbyID;
+
+		// Use a queue to find all connected teammates (breadth-first search)
+		std::queue<CSteamID> toProcess;
+		std::set<CSteamID> processed;
+		toProcess.push(userID);
+		processed.insert(userID);
+
+		while (!toProcess.empty())
+		{
+			auto currentID = toProcess.front();
+			toProcess.pop();
+
+			// Process all teammates of the current user
+			for (auto teammateID : teammateConnections[currentID])
 			{
-				auto teammateIt = findUserBySteamID(teammateInfo.steamID);
+				// Skip already processed teammates
+				if (processed.find(teammateID) != processed.end())
+				{
+					continue;
+				}
+
+				// Mark as processed
+				processed.insert(teammateID);
+
+				// Add to process queue
+				toProcess.push(teammateID);
+
+				// Assign same lobby ID
+				auto teammateIt = findUserBySteamID(teammateID);
 				if (teammateIt != leetifyUsers.end())
 				{
-					hasTeammate = true;
-					if (teammateIt->lobbyID != 0 && teammateIt->lobbyID != user.lobbyID)
-					{
-						// Merge lobbies
-						int oldLobbyID = teammateIt->lobbyID;
-						for (auto &u : leetifyUsers)
-						{
-							if (u.lobbyID == oldLobbyID)
-							{
-								u.lobbyID = user.lobbyID;
-							}
-						}
-					}
-					else
-					{
-						teammateIt->lobbyID = user.lobbyID;
-					}
+					teammateIt->lobbyID = lobbyID;
+					steamIDToLobbyID[teammateID] = lobbyID;
 				}
-			}
-
-			// Reset lobby ID if it's a single-player lobby
-			if (!hasTeammate)
-			{
-				user.lobbyID = 0;
 			}
 		}
 	}
