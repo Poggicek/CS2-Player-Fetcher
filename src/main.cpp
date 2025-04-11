@@ -85,12 +85,78 @@ std::string roundTo(float value, int decimalPlaces)
 	return stream.str();
 }
 
+void processAndSortUsers(std::vector<LeetifyUser> &leetifyUsers)
+{
+	int nextLobbyID = 1;
+
+	auto findUserBySteamID = [&leetifyUsers](CSteamID steamID) {
+		return std::find_if(leetifyUsers.begin(), leetifyUsers.end(),
+		                    [steamID](const LeetifyUser &u) { return u.steamID == steamID; });
+	};
+
+	for (auto &user : leetifyUsers)
+	{
+		if (user.lobbyID == 0)
+		{
+			user.lobbyID = nextLobbyID++;
+			bool hasTeammate = false;
+
+			for (const auto &teammateInfo : user.recentTeammates)
+			{
+				auto teammateIt = findUserBySteamID(teammateInfo.steamID);
+				if (teammateIt != leetifyUsers.end())
+				{
+					hasTeammate = true;
+					if (teammateIt->lobbyID != 0 && teammateIt->lobbyID != user.lobbyID)
+					{
+						// Merge lobbies
+						int oldLobbyID = teammateIt->lobbyID;
+						for (auto &u : leetifyUsers)
+						{
+							if (u.lobbyID == oldLobbyID)
+							{
+								u.lobbyID = user.lobbyID;
+							}
+						}
+					}
+					else
+					{
+						teammateIt->lobbyID = user.lobbyID;
+					}
+				}
+			}
+
+			// Reset lobby ID if it's a single-player lobby
+			if (!hasTeammate)
+			{
+				user.lobbyID = 0;
+			}
+		}
+	}
+
+	// Sort users by lobby ID and then by Leetify rating
+	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser &a, const LeetifyUser &b) {
+		if (b.lobbyID != a.lobbyID)
+		{
+			return a.lobbyID > b.lobbyID;
+		}
+
+		if (b.ranks.leetify != a.ranks.leetify)
+		{
+			return a.ranks.leetify > b.ranks.leetify;
+		}
+
+		return a.steamID > b.steamID;
+	});
+}
+
 void renderTable(std::vector<LeetifyUser> leetifyUsers)
 {
 	using namespace ftxui;
 
 	auto now = std::chrono::system_clock::now();
-
+	auto mySteamID = g_pSteamUser->GetSteamID();
+	auto lastSeenLobbyID = -1;
 	std::vector<std::vector<Element>> table_data;
 
 	table_data.push_back({text(" Name ") | bold | color(Color::Yellow), text(" Leetify ") | bold | color(Color::Yellow),
@@ -99,10 +165,21 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 	                      text(" Preaim ") | bold | color(Color::Yellow), text(" HS% ") | bold | color(Color::Yellow),
 	                      text(" Win% ") | bold | color(Color::Yellow), text(" Wins ") | bold | color(Color::Yellow),
 	                      text(" FACEIT ") | bold | color(Color::Yellow), text(" Time ") | bold | color(Color::Yellow),
-	                      text(" Bans ") | bold | color(Color::Yellow)});
+	                      text(" Bans ") | bold | color(Color::Yellow),
+	                      text(" Teammates ") | bold | color(Color::Yellow)});
 
 	for (const auto &user : leetifyUsers)
 	{
+		if (lastSeenLobbyID != user.lobbyID)
+		{
+			if (lastSeenLobbyID != -1)
+			{
+				table_data.push_back({});
+			}
+
+			lastSeenLobbyID = user.lobbyID;
+		}
+
 		std::vector<Element> row;
 		std::string playerName = std::string(g_pSteamFriends->GetFriendPersonaName(user.steamID));
 		if (playerName.empty() || playerName == "[unknown]")
@@ -118,14 +195,15 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 
 		row.push_back(hbox({
 		    text(" "),
-		    text(playerName + " ") | hyperlink(profileUrl),
+		    text(playerName + " ") | hyperlink(profileUrl) |
+		        color(user.steamID == mySteamID ? Color::Yellow : Color::White),
 		}));
 
 		if (!user.success)
 		{
 			row.push_back(text(" N/A ") | color(Color::Magenta));
-			row.push_back(text(""));
-			row.push_back(text(""));
+			row.push_back(text("?"));
+			row.push_back(text("?"));
 			row.push_back(text(""));
 			row.push_back(text(""));
 			row.push_back(text(""));
@@ -135,6 +213,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 			row.push_back(text(""));
 			row.push_back(text(""));
 			row.push_back(text(" " + std::to_string(playedAgoMinutes) + "m ago "));
+			row.push_back(text(""));
 			row.push_back(text(""));
 			table_data.push_back(row);
 			continue;
@@ -168,15 +247,13 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		                      : user.skills.reaction_time > 650 ? Color::Yellow
 		                                                        : Color::White;
 
-		Color preaimColor = user.skills.preaim < 3    ? Color::Red
-		                    : user.skills.preaim < 10 ? Color::Green
-		                                              : Color::White;
+		Color preaimColor = user.skills.preaim < 3 ? Color::Red : user.skills.preaim < 10 ? Color::Green : Color::White;
 
 		Color hsColor = user.skills.accuracy_head >= 20 ? Color::Green : Color::White;
 
-		row.push_back(text((user.ranks.leetify >= 0.0 ? "+" : "") + roundTo(leetifyRating, 2) + " ") |
+		row.push_back(text((user.ranks.leetify >= 0.0 ? " +" : " ") + roundTo(leetifyRating, 2) + " ") |
 		              color(leetifyColor) | bold);
-		row.push_back(text(user.ranks.premier <= 0 ? "" : std::to_string(user.ranks.premier) + " ") |
+		row.push_back(text(" " + (user.ranks.premier <= 0 ? "?" : std::to_string(user.ranks.premier)) + " ") |
 		              color(premierColor));
 		row.push_back(text(" " + std::to_string((int)user.rating.aim) + " ") | color(aimColor));
 		row.push_back(text(" " + std::to_string((int)user.rating.positioning) + " ") | color(posColor));
@@ -197,7 +274,22 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 			row.push_back(text(""));
 		}
 
-		row.push_back(text(" " + std::to_string(playedAgoMinutes) + "m ago "));
+		if (user.steamID == mySteamID)
+		{
+			row.push_back(text(" you "));
+		}
+		else if (playedAgoMinutes >= 1440)
+		{
+			row.push_back(text(" " + std::to_string(playedAgoMinutes / 1440) + "d ago "));
+		}
+		else if (playedAgoMinutes >= 180)
+		{
+			row.push_back(text(" " + std::to_string(playedAgoMinutes / 60) + "h ago "));
+		}
+		else
+		{
+			row.push_back(text(" " + std::to_string(playedAgoMinutes) + "m ago "));
+		}
 
 		if (!user.bans.empty())
 		{
@@ -216,6 +308,40 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		{
 			row.push_back(text(""));
 		}
+
+		auto findUserBySteamID = [&leetifyUsers](uint64 steamID) {
+			return std::find_if(leetifyUsers.begin(), leetifyUsers.end(),
+			                    [steamID](const LeetifyUser &u) { return u.steamID.ConvertToUint64() == steamID; });
+		};
+
+		std::string teammatesStr;
+		bool firstTeammate = true;
+
+		for (const auto &teammateInfo : user.recentTeammates)
+		{
+			auto teammateIt = findUserBySteamID(teammateInfo.steamID.ConvertToUint64());
+			if (teammateIt != leetifyUsers.end())
+			{
+				if (!firstTeammate)
+				{
+					teammatesStr += ", ";
+				}
+				firstTeammate = false;
+
+				std::string teammateName = std::string(g_pSteamFriends->GetFriendPersonaName(teammateInfo.steamID));
+				if (teammateName.empty() || teammateName == "[unknown]")
+				{
+					teammateName = teammateIt->name;
+				}
+
+				if (teammateInfo.matchCount > 1)
+				{
+					teammatesStr += teammateName + " (" + std::to_string(teammateInfo.matchCount) + ")";
+				}
+			}
+		}
+
+		row.push_back(text(" " + teammatesStr + " "));
 
 		table_data.push_back(row);
 	}
@@ -249,6 +375,7 @@ int main()
 
 	CustomSteamAPIInit();
 
+	auto mySteamID = g_pSteamUser->GetSteamID();
 	auto iPlayers = g_pSteamFriends->GetCoplayFriendCount();
 
 	std::vector<Player> players;
@@ -256,7 +383,6 @@ int main()
 	for (int i = 0; i < iPlayers; ++i)
 	{
 		CSteamID playerSteamID = g_pSteamFriends->GetCoplayFriend(i);
-		static auto mySteamID = g_pSteamUser->GetSteamID();
 
 		if (playerSteamID == mySteamID)
 		{
@@ -299,19 +425,13 @@ int main()
 		players.erase(players.begin() + 9, players.end());
 	}
 
+	players.emplace_back(mySteamID, 0);
+
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	std::vector<LeetifyUser> leetifyUsers = GetLeetifyUsers(players);
 	curl_global_cleanup();
 
-	std::sort(leetifyUsers.begin(), leetifyUsers.end(), [](const LeetifyUser &a, const LeetifyUser &b) {
-		if (b.ranks.leetify != a.ranks.leetify)
-		{
-			return a.ranks.leetify > b.ranks.leetify;
-		}
-
-		return a.steamID > b.steamID;
-	});
-
+	processAndSortUsers(leetifyUsers);
 	renderTable(leetifyUsers);
 
 	CustomSteamAPIShutdown();

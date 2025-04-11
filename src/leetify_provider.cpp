@@ -113,7 +113,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 				user->winRate = json["winrate"].get<float>() * 100.0f;
 				user->matchmakingWins = json["matchmaking_wins"].get<int>();
 
-				if (json.contains("rating"))
+				if (json.contains("rating") && json["rating"].is_object())
 				{
 					auto &rating = json["rating"];
 					user->rating.aim = rating["aim"].get<float>();
@@ -125,7 +125,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 					user->rating.t_leetify = rating["t_leetify"].get<float>();
 				}
 
-				if (json.contains("ranks"))
+				if (json.contains("ranks") && json["ranks"].is_object())
 				{
 					if (!json["ranks"]["leetify"].is_null())
 					{
@@ -143,7 +143,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 					}
 				}
 
-				if (json.contains("skills"))
+				if (json.contains("skills") && json["skills"].is_object())
 				{
 					auto &skills = json["skills"];
 					user->skills.accuracy_enemy_spotted = skills["accuracy_enemy_spotted"].get<float>();
@@ -181,6 +181,17 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 				if (json.contains("bans") && json["bans"].is_array())
 				{
 					user->bans = json["bans"].get<std::vector<std::string>>();
+				}
+
+				if (json.contains("recent_teammates") && json["recent_teammates"].is_array())
+				{
+					for (const auto &teammate : json["recent_teammates"])
+					{
+						auto steam64_id = std::stoull(teammate["steam64_id"].get<std::string>());
+						auto matchCount = teammate["recent_matches_count"].get<int>();
+
+						user->recentTeammates.emplace_back(CSteamID(steam64_id), matchCount);
+					}
 				}
 
 				user->success = true;

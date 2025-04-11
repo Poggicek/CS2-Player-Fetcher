@@ -17,12 +17,24 @@ struct LeetifyUser
 {
 	bool success = false;
 	float winRate = 0.0f;
+	int lobbyID = 0;
 	int matchmakingWins = -1;
 	int playedTime = 0;
 	CSteamID steamID;
-	std::set<uint64> teammates{};
 	std::string name;
 	std::vector<std::string> bans;
+
+	struct TeammateInfo
+	{
+		CSteamID steamID;
+		int matchCount;
+
+		TeammateInfo(CSteamID id, int count) : steamID(id), matchCount(count)
+		{
+		}
+	};
+
+	std::vector<TeammateInfo> recentTeammates;
 
 	struct Ranks
 	{
