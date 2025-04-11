@@ -187,6 +187,11 @@ void processAndSortUsers(std::vector<LeetifyUser> &leetifyUsers)
 			return a.lobbyID > b.lobbyID;
 		}
 
+		if (b.success != a.success)
+		{
+			return a.success;
+		}
+
 		if (b.ranks.leetify != a.ranks.leetify)
 		{
 			return a.ranks.leetify > b.ranks.leetify;
@@ -248,8 +253,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		if (!user.success)
 		{
 			row.push_back(text(" N/A ") | color(Color::Magenta));
-			row.push_back(text("?"));
-			row.push_back(text("?"));
+			row.push_back(text(" ? "));
 			row.push_back(text(""));
 			row.push_back(text(""));
 			row.push_back(text(""));

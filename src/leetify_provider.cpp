@@ -57,7 +57,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 		}
 		else
 		{
-			printf("Failed to initialize CURL handle for %llu\n", i);
+			printf("fail: %llu - failed to initialize cURL handle\n", player.steamID.ConvertToUint64());
 		}
 	}
 
@@ -87,9 +87,11 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 			CurlHandle *handle;
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &handle);
 
+			auto user = handle->user;
+
 			if (msg->data.result != CURLE_OK)
 			{
-				printf("failed to perform curl: error %d\n", msg->data.result);
+				printf("fail: %llu - cURL error %d\n", user->steamID.ConvertToUint64(), msg->data.result);
 				continue;
 			}
 
@@ -98,11 +100,9 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 			if (response_code != 200)
 			{
-				printf("failed to perform leetify request: HTTP %d\n", response_code);
+				printf("fail: %llu - Leetify error HTTP %d\n", user->steamID.ConvertToUint64(), response_code);
 				continue;
 			}
-
-			auto user = handle->user;
 
 			try
 			{
@@ -197,8 +197,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 			}
 			catch (const std::exception &e)
 			{
-				printf("fail: %llu ", user->steamID.ConvertToUint64());
-				printf("error %s\n", e.what());
+				printf("fail: %llu - error %s\n", user->steamID.ConvertToUint64(), e.what());
 			}
 
 			curl_multi_remove_handle(multiHandle, msg->easy_handle);
