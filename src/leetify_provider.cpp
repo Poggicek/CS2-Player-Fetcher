@@ -61,7 +61,6 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 		}
 	}
 
-	auto now = std::chrono::system_clock::now();
 	int stillRunning = 0;
 	do
 	{
@@ -94,7 +93,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 				continue;
 			}
 
-			long response_code;
+			int response_code;
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
 
 			if (response_code != 200)

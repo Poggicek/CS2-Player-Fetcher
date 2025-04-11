@@ -14,7 +14,7 @@
 std::string GetSteamClientDllPath()
 {
 	HKEY hKey;
-	LONG lRes = RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Valve\\Steam\\ActiveProcess", 0, KEY_READ, &hKey);
+	LONG lRes = RegOpenKeyExA(HKEY_CURRENT_USER, R"(Software\Valve\Steam\ActiveProcess)", 0, KEY_READ, &hKey);
 
 	if (lRes != ERROR_SUCCESS)
 	{
@@ -33,14 +33,14 @@ std::string GetSteamClientDllPath()
 		return "";
 	}
 
-	return std::string(value);
+	return {value};
 }
 
 void CustomSteamAPIInit()
 {
 	auto steamClientDllPath = GetSteamClientDllPath();
 
-	auto clientModule = LoadLibraryExA(steamClientDllPath.c_str(), 0, 8);
+	auto clientModule = LoadLibraryExA(steamClientDllPath.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
 
 	if (!clientModule)
 	{
@@ -220,7 +220,7 @@ void renderTable(std::vector<LeetifyUser> leetifyUsers)
 		{
 			if (lastSeenLobbyID != -1)
 			{
-				table_data.push_back({});
+				table_data.push_back({text("")});
 			}
 
 			lastSeenLobbyID = user.lobbyID;
