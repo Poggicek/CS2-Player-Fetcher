@@ -28,13 +28,13 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 		return users;
 	}
 
-	for (size_t i = 0; i < players.size(); i++)
+	for (auto i = 0; i < players.size(); i++)
 	{
 		auto handle = std::make_unique<CurlHandle>();
 		handle->user = &users[i];
 		handle->handle = curl_easy_init();
 
-		auto player = players[i];
+		auto &player = players[i];
 		users[i].steamID = player.steamID;
 		users[i].playedTime = player.time;
 

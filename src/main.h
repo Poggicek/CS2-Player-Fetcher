@@ -1,12 +1,6 @@
 #pragma once
 
-#include <steam_api.h>
+#include "leetify_provider.h"
+#include <string>
 
-typedef void *(*CreateInterfaceFn)(const char *pName, int *pReturnCode);
-ISteamClient *g_pSteamClient;
-ISteamFriends *g_pSteamFriends;
-ISteamUser *g_pSteamUser;
-HSteamPipe g_hSteamPipe;
-HSteamUser g_hSteamUser;
-
-bool g_bSteamAPIInitialized = false;
+std::string GetPersonaName(LeetifyUser user);

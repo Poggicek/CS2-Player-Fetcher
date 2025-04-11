@@ -1,6 +1,7 @@
-/bin
-/build
+/bin/
+/build/
 *.sln
 .vs
 .xmake
 /vsxmake2022
+/out/

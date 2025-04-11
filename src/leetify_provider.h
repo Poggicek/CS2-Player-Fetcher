@@ -1,7 +1,8 @@
 #pragma once
 
-#include <set>
-#include <steam_api.h>
+#include "steam_api.h"
+#include <string>
+#include <vector>
 
 struct Player
 {
