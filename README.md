@@ -1,21 +1,19 @@
 # CS2 Player Fetcher
 
-CS2 Player Fetcher is a C++ application that retrieves and displays information about Counter-Strike 2 players you've recently played with
-(this includes the players in the current match you are in).
-It tries to filter the players to ones in your current server.
-It uses the Steam API and Leetify API to gather data and present it in a neatly formatted table.
+Retrieves and displays information about Counter-Strike 2 players you've recently played with.
 
-- Fetches recent co-players from Steam
-- Retrieves player statistics from Leetify
-- Displays information such as Leetify rating, Premier rank, aim/positioning/utility scores, time to damage, crosshair placement, headshot percentage, win rate, matches, and bans
-- Provides an option to open Leetify profile links for each player
+This program works by asking your Steam client for "coplay" friends, sorts the result by time, and takes up to 9 players to fetch stats for. Unfortunately some players may be missing from time to time, this is a Steam issue.
+
+Then for every steamid it fetches data from [Leetify](https://leetify.com/) public API, which was created with our feedback.
+
+At the end, displays information such as Leetify rating, Premier rank, aim/positioning/utility scores, time to damage, crosshair placement, headshot percentage, win rate, matches, and bans.
+
+If available, it will also try to group players into lobbies and display their recent teammates.
 
 This project is not affiliated with or endorsed by Valve or Leetify. Use at your own risk.
 
-### Download
+## Download
 
-You can download the latest build [from the Actions page](https://github.com/Poggicek/CS2-Player-Fetcher/actions)
-if you are logged in to GitHub.
+[Download latest release here.](https://github.com/Poggicek/CS2-Player-Fetcher/releases/latest)
 
-Otherwise, use [the nightly link](https://nightly.link/Poggicek/CS2-Player-Fetcher/workflows/build/master/artifact.zip)
-to get a direct download.
+It may be outdated, so you can use [this nightly link](https://nightly.link/Poggicek/CS2-Player-Fetcher/workflows/build/master/artifact.zip) to download the latest build.
