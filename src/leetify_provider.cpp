@@ -100,7 +100,10 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 			if (response_code != 200)
 			{
-				printf("fail: %llu - Leetify error HTTP %d\n", user->steamID.ConvertToUint64(), response_code);
+				if (response_code != 404)
+				{
+					printf("fail: %llu - Leetify error HTTP %d\n", user->steamID.ConvertToUint64(), response_code);
+				}
 				continue;
 			}
 
