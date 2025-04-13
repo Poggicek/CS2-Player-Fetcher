@@ -225,9 +225,9 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 		auto posColor = user.rating.positioning >= 60 ? Color::Green : Color::White;
 		auto winsColor = user.winRate >= 55 ? Color::Green : user.winRate <= 45 ? Color::Red : Color::White;
 
-		auto faceitColor = user.ranks.faceit >= 2001   ? Color::Red
-		                   : user.ranks.faceit >= 1701 ? Color::Magenta
-		                                               : Color::White;
+		auto faceitColor = user.ranks.faceit >= 10  ? Color::Red
+		                   : user.ranks.faceit >= 8 ? Color::Magenta
+		                                            : Color::White;
 
 		auto reactionColor = user.skills.reaction_time < 300   ? Color::Red
 		                     : user.skills.reaction_time < 450 ? Color::Green
