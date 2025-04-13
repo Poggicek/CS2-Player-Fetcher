@@ -263,15 +263,15 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 
 		if (user.steamID == mySteamID)
 		{
-			row.push_back(text(" you "));
+			row.push_back(text(" you ") | color(Color::GrayDark));
 		}
 		else if (playedAgoMinutes >= 1440)
 		{
-			row.push_back(text(" " + std::to_string(playedAgoMinutes / 1440) + "d ago "));
+			row.push_back(text(" >" + std::to_string(playedAgoMinutes / 1440) + "d ago ") | color(Color::GrayDark));
 		}
 		else if (playedAgoMinutes >= 180)
 		{
-			row.push_back(text(" " + std::to_string(playedAgoMinutes / 60) + "h ago "));
+			row.push_back(text(" >" + std::to_string(playedAgoMinutes / 60) + "h ago ") | color(Color::GrayDark));
 		}
 		else
 		{
