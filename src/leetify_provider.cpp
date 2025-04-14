@@ -145,9 +145,9 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 					}
 				}
 
-				if (json.contains("skills") && json["skills"].is_object())
+				if (json.contains("stats") && json["stats"].is_object())
 				{
-					auto &skills = json["skills"];
+					auto &skills = json["stats"];
 					user->skills.accuracy_enemy_spotted = skills["accuracy_enemy_spotted"].get<float>();
 					user->skills.accuracy_head = skills["accuracy_head"].get<float>();
 					user->skills.counter_strafing_good_shots_ratio =
