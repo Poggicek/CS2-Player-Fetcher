@@ -153,14 +153,14 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 	auto lastSeenLobbyID = -1;
 	std::vector<std::vector<Element>> table_data;
 
-	table_data.push_back(
-	    {text(" Name ") | bold | color(Color::Yellow), text(" Leetify ") | bold | color(Color::Yellow),
-	     text(" Premier ") | bold | color(Color::Yellow), text(" Aim ") | bold | color(Color::Yellow),
-	     text(" Reaction ") | bold | color(Color::Yellow), text(" Preaim ") | bold | color(Color::Yellow),
-	     text(" HS% ") | bold | color(Color::Yellow), text(" Win% ") | bold | color(Color::Yellow),
-	     text(" Matches ") | bold | color(Color::Yellow), text(" First Match ") | bold | color(Color::Yellow),
-	     text(" FACEIT ") | bold | color(Color::Yellow), text(" Time ") | bold | color(Color::Yellow),
-	     text(" Bans ") | bold | color(Color::Yellow), text(" Teammates ") | bold | color(Color::Yellow)});
+	table_data.push_back({text(" Name ") | bold | color(Color::Cyan), text(" Leetify ") | bold | color(Color::Cyan),
+	                      text(" Premier ") | bold | color(Color::Cyan), text(" Aim ") | bold | color(Color::Cyan),
+	                      text(" Reaction ") | bold | color(Color::Cyan), text(" Preaim ") | bold | color(Color::Cyan),
+	                      text(" HS% ") | bold | color(Color::Cyan), text(" Win% ") | bold | color(Color::Cyan),
+	                      text(" Matches ") | bold | color(Color::Cyan),
+	                      text(" First Match ") | bold | color(Color::Cyan),
+	                      text(" FACEIT ") | bold | color(Color::Cyan), text(" Time ") | bold | color(Color::Cyan),
+	                      text(" Bans ") | bold | color(Color::Cyan), text(" Teammates ") | bold | color(Color::Cyan)});
 
 	for (const auto &user : leetifyUsers)
 	{
@@ -347,7 +347,8 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 	auto table = Table(table_data);
 
 	table.SelectAll().SeparatorVertical(LIGHT);
-	table.SelectAll().Border(HEAVY);
+	table.SelectAll().Border(LIGHT);
+	table.SelectRow(0).BorderBottom(LIGHT);
 
 	table.SelectColumn(1).DecorateCells(align_right);  // leetify
 	table.SelectColumn(2).DecorateCells(align_right);  // premier
