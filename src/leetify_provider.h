@@ -1,6 +1,7 @@
 #pragma once
 
 #include "steam_api.h"
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -19,11 +20,12 @@ struct LeetifyUser
 	bool success = false;
 	float winRate = 0.0f;
 	int lobbyID = 0;
-	int matchmakingWins = -1;
+	int totalMatches = -1;
 	int playedTime = 0;
 	CSteamID steamID;
 	std::string name;
 	std::vector<std::string> bans;
+	std::chrono::sys_time<std::chrono::milliseconds> firstMatchDate;
 
 	struct TeammateInfo
 	{

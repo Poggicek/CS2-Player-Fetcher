@@ -153,14 +153,14 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 	auto lastSeenLobbyID = -1;
 	std::vector<std::vector<Element>> table_data;
 
-	table_data.push_back({text(" Name ") | bold | color(Color::Yellow), text(" Leetify ") | bold | color(Color::Yellow),
-	                      text(" Premier ") | bold | color(Color::Yellow), text(" Aim ") | bold | color(Color::Yellow),
-	                      text(" Pos ") | bold | color(Color::Yellow), text(" Reaction ") | bold | color(Color::Yellow),
-	                      text(" Preaim ") | bold | color(Color::Yellow), text(" HS% ") | bold | color(Color::Yellow),
-	                      text(" Win% ") | bold | color(Color::Yellow), text(" Wins ") | bold | color(Color::Yellow),
-	                      text(" FACEIT ") | bold | color(Color::Yellow), text(" Time ") | bold | color(Color::Yellow),
-	                      text(" Bans ") | bold | color(Color::Yellow),
-	                      text(" Teammates ") | bold | color(Color::Yellow)});
+	table_data.push_back(
+	    {text(" Name ") | bold | color(Color::Yellow), text(" Leetify ") | bold | color(Color::Yellow),
+	     text(" Premier ") | bold | color(Color::Yellow), text(" Aim ") | bold | color(Color::Yellow),
+	     text(" Reaction ") | bold | color(Color::Yellow), text(" Preaim ") | bold | color(Color::Yellow),
+	     text(" HS% ") | bold | color(Color::Yellow), text(" Win% ") | bold | color(Color::Yellow),
+	     text(" Matches ") | bold | color(Color::Yellow), text(" First Match ") | bold | color(Color::Yellow),
+	     text(" FACEIT ") | bold | color(Color::Yellow), text(" Time ") | bold | color(Color::Yellow),
+	     text(" Bans ") | bold | color(Color::Yellow), text(" Teammates ") | bold | color(Color::Yellow)});
 
 	for (const auto &user : leetifyUsers)
 	{
@@ -225,9 +225,9 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 		auto posColor = user.rating.positioning >= 60 ? Color::Green : Color::White;
 		auto winsColor = user.winRate >= 55 ? Color::Green : user.winRate <= 45 ? Color::Red : Color::White;
 
-		auto faceitColor = user.ranks.faceit >= 10  ? Color::Red
-		                   : user.ranks.faceit >= 8 ? Color::Magenta
-		                                            : Color::White;
+		auto faceitColor = user.ranks.faceit >= 2001   ? Color::Red
+		                   : user.ranks.faceit >= 1701 ? Color::Magenta
+		                                               : Color::White;
 
 		auto reactionColor = user.skills.reaction_time < 300   ? Color::Red
 		                     : user.skills.reaction_time < 450 ? Color::Green
@@ -243,14 +243,30 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 		row.push_back(text(" " + (user.ranks.premier <= 0 ? "?" : std::to_string(user.ranks.premier)) + " ") |
 		              color(premierColor));
 		row.push_back(text(" " + std::to_string((int)user.rating.aim) + " ") | color(aimColor));
-		row.push_back(text(" " + std::to_string((int)user.rating.positioning) + " ") | color(posColor));
 
 		row.push_back(text(" " + std::to_string((int)user.skills.reaction_time) + "ms") | color(reactionColor));
 		row.push_back(text(" " + roundTo(user.skills.preaim, 2) + "° ") | color(preaimColor));
-		row.push_back(text(" " + std::to_string((int)user.skills.accuracy_head) + " ") | color(hsColor));
+		row.push_back(text(" " + std::to_string((int)user.skills.accuracy_head) + "% ") | color(hsColor));
 
 		row.push_back(text(" " + std::to_string((int)user.winRate) + "% ") | color(winsColor));
-		row.push_back(text(std::to_string(user.matchmakingWins) + " "));
+		row.push_back(text(std::to_string(user.totalMatches) + " ") |
+		              color(user.totalMatches < 100 ? Color::Red : Color::White));
+
+		auto daysSinceFirstMatch =
+		    std::chrono::duration_cast<std::chrono::hours>(now - user.firstMatchDate).count() / 24;
+
+		if (daysSinceFirstMatch > 365)
+		{
+			row.push_back(text(" " + std::to_string(daysSinceFirstMatch / 365) + " years "));
+		}
+		else if (daysSinceFirstMatch > 60)
+		{
+			row.push_back(text(" " + std::to_string(daysSinceFirstMatch / 30) + " months ") | color(Color::Yellow));
+		}
+		else
+		{
+			row.push_back(text(" " + std::to_string(daysSinceFirstMatch) + " days ") | color(Color::Red));
+		}
 
 		if (user.ranks.faceit > 0)
 		{
@@ -333,15 +349,14 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 	table.SelectAll().SeparatorVertical(LIGHT);
 	table.SelectAll().Border(HEAVY);
 
-	table.SelectColumn(1).DecorateCells(align_right);
-	table.SelectColumn(2).DecorateCells(align_right);
-	table.SelectColumn(3).DecorateCells(align_right);
-	table.SelectColumn(4).DecorateCells(align_right);
-	table.SelectColumn(6).DecorateCells(align_right);
-	table.SelectColumn(7).DecorateCells(align_right);
-	table.SelectColumn(8).DecorateCells(align_right);
-	table.SelectColumn(9).DecorateCells(align_right);
-	table.SelectColumn(10).DecorateCells(align_right);
+	table.SelectColumn(1).DecorateCells(align_right);  // leetify
+	table.SelectColumn(2).DecorateCells(align_right);  // premier
+	table.SelectColumn(3).DecorateCells(align_right);  // aim
+	table.SelectColumn(5).DecorateCells(align_right);  // preaim
+	table.SelectColumn(6).DecorateCells(align_right);  // hs
+	table.SelectColumn(7).DecorateCells(align_right);  // win
+	table.SelectColumn(8).DecorateCells(align_right);  // matches
+	table.SelectColumn(10).DecorateCells(align_right); // faceit
 
 	auto document = table.Render();
 	auto screen = Screen::Create(Dimension::Fit(document));
@@ -354,6 +369,7 @@ void Render(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 	processAndSortUsers(leetifyUsers);
 	renderTable(mySteamID, leetifyUsers);
 
-	printf("\n\nReaction is time to damage. Wins is Premier wins in current season.");
+	printf("\n\nReaction is time to damage.");
 	printf("\nCtrl+Click on player name to open on Leetify.");
+	printf("\n");
 }

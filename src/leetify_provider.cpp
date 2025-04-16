@@ -113,7 +113,13 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 				user->name = json["name"].is_null() ? "" : json["name"].get<std::string>();
 				user->winRate = json["winrate"].get<float>() * 100.0f;
-				user->matchmakingWins = json["matchmaking_wins"].get<int>();
+				user->totalMatches = json["total_matches"].get<int>();
+
+				if (json.contains("first_match_date") && !json["first_match_date"].is_null())
+				{
+					std::istringstream iss(json["first_match_date"].get<std::string>());
+					std::chrono::from_stream(iss, "%Y-%m-%dT%H:%M:%S%Z", user->firstMatchDate);
+				}
 
 				if (json.contains("rating") && json["rating"].is_object())
 				{
@@ -139,9 +145,9 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 						user->ranks.premier = json["ranks"]["premier"].get<int>();
 					}
 
-					if (!json["ranks"]["faceit"].is_null())
+					if (!json["ranks"]["faceit_elo"].is_null())
 					{
-						user->ranks.faceit = json["ranks"]["faceit"].get<int>();
+						user->ranks.faceit = json["ranks"]["faceit_elo"].get<int>();
 					}
 				}
 
@@ -166,7 +172,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 					user->skills.he_foes_damage_avg = skills["he_foes_damage_avg"].get<float>();
 					user->skills.he_friends_damage_avg = skills["he_friends_damage_avg"].get<float>();
 					user->skills.preaim = skills["preaim"].get<float>();
-					user->skills.reaction_time = skills["reaction_time"].get<float>();
+					user->skills.reaction_time = skills["reaction_time_ms"].get<float>();
 					user->skills.spray_accuracy = skills["spray_accuracy"].get<float>();
 					user->skills.t_opening_aggression_success_rate =
 					    skills["t_opening_aggression_success_rate"].get<float>();
@@ -182,7 +188,10 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 
 				if (json.contains("bans") && json["bans"].is_array())
 				{
-					user->bans = json["bans"].get<std::vector<std::string>>();
+					for (const auto &ban : json["bans"])
+					{
+						user->bans.push_back(ban["platform"].get<std::string>());
+					}
 				}
 
 				if (json.contains("recent_teammates") && json["recent_teammates"].is_array())
