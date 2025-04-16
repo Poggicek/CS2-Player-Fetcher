@@ -166,7 +166,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 					user->skills.he_foes_damage_avg = skills["he_foes_damage_avg"].get<float>();
 					user->skills.he_friends_damage_avg = skills["he_friends_damage_avg"].get<float>();
 					user->skills.preaim = skills["preaim"].get<float>();
-					user->skills.reaction_time = skills["reaction_time"].get<float>();
+					user->skills.reaction_time = skills["reaction_time_ms"].get<float>();
 					user->skills.spray_accuracy = skills["spray_accuracy"].get<float>();
 					user->skills.t_opening_aggression_success_rate =
 					    skills["t_opening_aggression_success_rate"].get<float>();
