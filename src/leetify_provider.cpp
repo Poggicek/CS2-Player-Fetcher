@@ -23,6 +23,8 @@ template <typename T> T getValue(const nlohmann::json &j, const std::string &key
 
 std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 {
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+
 	std::vector<LeetifyUser> users(players.size());
 	std::vector<std::unique_ptr<CurlHandle>> handles(players.size());
 
@@ -219,6 +221,7 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 	}
 
 	curl_multi_cleanup(multiHandle);
+	curl_global_cleanup();
 
 	return users;
 }

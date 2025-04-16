@@ -1,5 +1,4 @@
 #include "main.h"
-#include "curl/curl.h"
 #include "leetify_provider.h"
 #include "ui.h"
 #include <algorithm>
@@ -144,9 +143,7 @@ int main()
 
 	players.emplace_back(mySteamID, 0);
 
-	curl_global_init(CURL_GLOBAL_DEFAULT);
 	auto leetifyUsers = GetLeetifyUsers(players);
-	curl_global_cleanup();
 
 	Render(mySteamID, leetifyUsers);
 
