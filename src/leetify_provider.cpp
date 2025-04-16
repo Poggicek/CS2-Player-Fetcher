@@ -16,6 +16,11 @@ struct CurlHandle
 	std::string response;
 };
 
+template <typename T> T getValue(const nlohmann::json &j, const std::string &key, const T &defaultValue = T())
+{
+	return j.contains(key) && !j[key].is_null() ? j.value(key, defaultValue) : defaultValue;
+}
+
 std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 {
 	std::vector<LeetifyUser> users(players.size());
@@ -111,11 +116,11 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 			{
 				auto json = nlohmann::json::parse(handle->response);
 
-				user->name = json["name"].is_null() ? "" : json["name"].get<std::string>();
-				user->winRate = json["winrate"].get<float>() * 100.0f;
-				user->totalMatches = json["total_matches"].get<int>();
+				user->name = getValue(json, "name", std::string(""));
+				user->winRate = getValue(json, "winrate", 0.0f) * 100.0f;
+				user->totalMatches = getValue(json, "total_matches", 0);
 
-				if (json.contains("first_match_date") && !json["first_match_date"].is_null())
+				if (json.contains("first_match_date") && json["first_match_date"].is_string())
 				{
 					std::istringstream iss(json["first_match_date"].get<std::string>());
 					std::chrono::from_stream(iss, "%Y-%m-%dT%H:%M:%S%Z", user->firstMatchDate);
@@ -124,73 +129,65 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 				if (json.contains("rating") && json["rating"].is_object())
 				{
 					auto &rating = json["rating"];
-					user->rating.aim = rating["aim"].get<float>();
-					user->rating.positioning = rating["positioning"].get<float>();
-					user->rating.utility = rating["utility"].get<float>();
-					user->rating.clutch = rating["clutch"].get<float>();
-					user->rating.opening = rating["opening"].get<float>();
-					user->rating.ct_leetify = rating["ct_leetify"].get<float>();
-					user->rating.t_leetify = rating["t_leetify"].get<float>();
+					user->rating.aim = getValue(rating, "aim", 0.0f);
+					user->rating.positioning = getValue(rating, "positioning", 0.0f);
+					user->rating.utility = getValue(rating, "utility", 0.0f);
+					user->rating.clutch = getValue(rating, "clutch", 0.0f);
+					user->rating.opening = getValue(rating, "opening", 0.0f);
+					user->rating.ct_leetify = getValue(rating, "ct_leetify", 0.0f);
+					user->rating.t_leetify = getValue(rating, "t_leetify", 0.0f);
 				}
 
 				if (json.contains("ranks") && json["ranks"].is_object())
 				{
-					if (!json["ranks"]["leetify"].is_null())
-					{
-						user->ranks.leetify = json["ranks"]["leetify"].get<float>();
-					}
-
-					if (!json["ranks"]["premier"].is_null())
-					{
-						user->ranks.premier = json["ranks"]["premier"].get<int>();
-					}
-
-					if (!json["ranks"]["faceit_elo"].is_null())
-					{
-						user->ranks.faceit = json["ranks"]["faceit_elo"].get<int>();
-					}
+					auto &ranks = json["ranks"];
+					user->ranks.leetify = getValue(ranks, "leetify", 0.0f);
+					user->ranks.premier = getValue(ranks, "premier", 0);
+					user->ranks.faceit = getValue(ranks, "faceit_elo", 0);
 				}
 
 				if (json.contains("stats") && json["stats"].is_object())
 				{
 					auto &skills = json["stats"];
-					user->skills.accuracy_enemy_spotted = skills["accuracy_enemy_spotted"].get<float>();
-					user->skills.accuracy_head = skills["accuracy_head"].get<float>();
+					user->skills.accuracy_enemy_spotted = getValue(skills, "accuracy_enemy_spotted", 0.0f);
+					user->skills.accuracy_head = getValue(skills, "accuracy_head", 0.0f);
 					user->skills.counter_strafing_good_shots_ratio =
-					    skills["counter_strafing_good_shots_ratio"].get<float>();
+					    getValue(skills, "counter_strafing_good_shots_ratio", 0.0f);
 					user->skills.ct_opening_aggression_success_rate =
-					    skills["ct_opening_aggression_success_rate"].get<float>();
+					    getValue(skills, "ct_opening_aggression_success_rate", 0.0f);
 					user->skills.ct_opening_duel_success_percentage =
-					    skills["ct_opening_duel_success_percentage"].get<float>();
-					user->skills.flashbang_hit_foe_avg_duration = skills["flashbang_hit_foe_avg_duration"].get<float>();
+					    getValue(skills, "ct_opening_duel_success_percentage", 0.0f);
+					user->skills.flashbang_hit_foe_avg_duration =
+					    getValue(skills, "flashbang_hit_foe_avg_duration", 0.0f);
 					user->skills.flashbang_hit_foe_per_flashbang =
-					    skills["flashbang_hit_foe_per_flashbang"].get<float>();
+					    getValue(skills, "flashbang_hit_foe_per_flashbang", 0.0f);
 					user->skills.flashbang_hit_friend_per_flashbang =
-					    skills["flashbang_hit_friend_per_flashbang"].get<float>();
-					user->skills.flashbang_leading_to_kill = skills["flashbang_leading_to_kill"].get<float>();
-					user->skills.flashbang_thrown = skills["flashbang_thrown"].get<float>();
-					user->skills.he_foes_damage_avg = skills["he_foes_damage_avg"].get<float>();
-					user->skills.he_friends_damage_avg = skills["he_friends_damage_avg"].get<float>();
-					user->skills.preaim = skills["preaim"].get<float>();
-					user->skills.reaction_time = skills["reaction_time_ms"].get<float>();
-					user->skills.spray_accuracy = skills["spray_accuracy"].get<float>();
+					    getValue(skills, "flashbang_hit_friend_per_flashbang", 0.0f);
+					user->skills.flashbang_leading_to_kill = getValue(skills, "flashbang_leading_to_kill", 0.0f);
+					user->skills.flashbang_thrown = getValue(skills, "flashbang_thrown", 0.0f);
+					user->skills.he_foes_damage_avg = getValue(skills, "he_foes_damage_avg", 0.0f);
+					user->skills.he_friends_damage_avg = getValue(skills, "he_friends_damage_avg", 0.0f);
+					user->skills.preaim = getValue(skills, "preaim", 0.0f);
+					user->skills.reaction_time = getValue(skills, "reaction_time_ms", 0.0f);
+					user->skills.spray_accuracy = getValue(skills, "spray_accuracy", 0.0f);
 					user->skills.t_opening_aggression_success_rate =
-					    skills["t_opening_aggression_success_rate"].get<float>();
+					    getValue(skills, "t_opening_aggression_success_rate", 0.0f);
 					user->skills.t_opening_duel_success_percentage =
-					    skills["t_opening_duel_success_percentage"].get<float>();
+					    getValue(skills, "t_opening_duel_success_percentage", 0.0f);
 					user->skills.traded_deaths_success_percentage =
-					    skills["traded_deaths_success_percentage"].get<float>();
+					    getValue(skills, "traded_deaths_success_percentage", 0.0f);
 					user->skills.trade_kill_opportunities_per_round =
-					    skills["trade_kill_opportunities_per_round"].get<float>();
-					user->skills.trade_kills_success_percentage = skills["trade_kills_success_percentage"].get<float>();
-					user->skills.utility_on_death_avg = skills["utility_on_death_avg"].get<float>();
+					    getValue(skills, "trade_kill_opportunities_per_round", 0.0f);
+					user->skills.trade_kills_success_percentage =
+					    getValue(skills, "trade_kills_success_percentage", 0.0f);
+					user->skills.utility_on_death_avg = getValue(skills, "utility_on_death_avg", 0.0f);
 				}
 
 				if (json.contains("bans") && json["bans"].is_array())
 				{
 					for (const auto &ban : json["bans"])
 					{
-						user->bans.push_back(ban["platform"].get<std::string>());
+						user->bans.push_back(getValue(ban, "platform", std::string("")));
 					}
 				}
 
@@ -198,8 +195,8 @@ std::vector<LeetifyUser> GetLeetifyUsers(const std::vector<Player> &players)
 				{
 					for (const auto &teammate : json["recent_teammates"])
 					{
-						auto steam64_id = std::stoull(teammate["steam64_id"].get<std::string>());
-						auto matchCount = teammate["recent_matches_count"].get<int>();
+						auto steam64_id = std::stoull(getValue(teammate, "steam64_id", std::string("0")));
+						auto matchCount = getValue(teammate, "recent_matches_count", 0);
 
 						user->recentTeammates.emplace_back(CSteamID(steam64_id), matchCount);
 					}
