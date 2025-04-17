@@ -17,3 +17,8 @@ This project is not affiliated with or endorsed by Valve or Leetify. Use at your
 [Download latest release here.](https://github.com/Poggicek/CS2-Player-Fetcher/releases/latest)
 
 It may be outdated, so you can use [this nightly link](https://nightly.link/Poggicek/CS2-Player-Fetcher/workflows/build/master/artifact.zip) to download the latest build.
+
+
+## Screenshot
+
+![](./screenshot.png)

@@ -83,11 +83,21 @@ BOOL WINAPI consoleHandler(DWORD signal)
 	return false;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 	SetConsoleOutputCP(65001);
 	SetConsoleCtrlHandler(consoleHandler, true);
 	SetConsoleTitle("Leetify Stats");
+
+	auto demoMode = false;
+
+	for (int i = 1; i < argc; i++) 
+	{
+		if (strcmp(argv[i], "-demo") == 0) 
+		{
+			demoMode = true;
+		}
+	}
 
 	CustomSteamAPIInit();
 
@@ -142,6 +152,23 @@ int main()
 	}
 
 	players.emplace_back(mySteamID, 0);
+
+	if (demoMode)
+	{
+		auto now = time(NULL);
+
+		// Just a list of some pro players to get a pretty screenshot
+		players.clear();
+		players.emplace_back(CSteamID(76561198074762801ul), now);
+		players.emplace_back(CSteamID(76561198034202275ul), now);
+		players.emplace_back(CSteamID(76561198134401925ul), now);
+		players.emplace_back(CSteamID(76561198012872053ul), now);
+		players.emplace_back(CSteamID(76561197982141573ul), now);
+		players.emplace_back(CSteamID(76561198068002993ul), now);
+		players.emplace_back(CSteamID(76561197991272318ul), now);
+		players.emplace_back(CSteamID(76561197989744167ul), now);
+		players.emplace_back(CSteamID(76561198113666193ul), now);
+	}
 
 	auto leetifyUsers = GetLeetifyUsers(players);
 

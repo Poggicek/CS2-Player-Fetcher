@@ -8,9 +8,9 @@
 struct Player
 {
 	CSteamID steamID;
-	int time;
+	long long time;
 
-	Player(CSteamID playerSteamID, int iTimeStamp) : steamID(playerSteamID), time(iTimeStamp)
+	Player(CSteamID playerSteamID, long long iTimeStamp) : steamID(playerSteamID), time(iTimeStamp)
 	{
 	}
 };
