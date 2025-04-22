@@ -206,11 +206,9 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 			continue;
 		}
 
-		auto leetifyRating = user.ranks.leetify * 100.0;
-
-		auto leetifyColor = leetifyRating >= 5    ? Color::Yellow
-		                    : leetifyRating >= 1  ? Color::Green
-		                    : leetifyRating <= -1 ? Color::Red
+		auto leetifyColor = user.ranks.leetify >= 5    ? Color::Yellow
+		                    : user.ranks.leetify >= 1  ? Color::Green
+		                    : user.ranks.leetify <= -1 ? Color::Red
 		                                          : Color::White;
 
 		auto premierColor = user.ranks.premier >= 30000   ? Color::Yellow
@@ -238,7 +236,7 @@ void renderTable(CSteamID mySteamID, std::vector<LeetifyUser> leetifyUsers)
 
 		auto hsColor = user.skills.accuracy_head >= 20 ? Color::Green : Color::White;
 
-		row.push_back(text((user.ranks.leetify >= 0.0 ? " +" : " ") + roundTo(leetifyRating, 2) + " ") |
+		row.push_back(text((user.ranks.leetify >= 0.0 ? " +" : " ") + roundTo(user.ranks.leetify, 2) + " ") |
 		              color(leetifyColor) | bold);
 		row.push_back(text(" " + (user.ranks.premier <= 0 ? "?" : std::to_string(user.ranks.premier)) + " ") |
 		              color(premierColor));
